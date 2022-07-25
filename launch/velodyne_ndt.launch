@@ -28,7 +28,8 @@
   <!-- ndt arguments -->
   <arg name="map_resolution" default="0.1" />
   <arg name="map_path" default="$(find velodyne_ndt)/map/" />
-  <arg name="map_name" default="kcity_test6.pcd" />
+  <!-- <arg name="map_name" default="kcity_test6.pcd" /> -->
+  <arg name="map_name" default="leaf_0.1.pcd" />
   <arg name="leaf_size" default="0.2" />
     <!-- submap_select 1 is k-nearest search, 0 is radius search-->
   <arg name="submap_select" default="1" />
