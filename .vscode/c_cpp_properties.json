@@ -1,0 +1,35 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/a/catkin_ws/devel/include/**",
+        "/home/a/lidar_ws/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/a/catkin_ws/src/Astar/include/**",
+        "/home/a/catkin_ws/src/vision_opencv/cv_bridge/include/**",
+        "/home/a/lidar_ws/src/direct_lidar_odometry/include/**",
+        "/home/a/catkin_ws/src/vision_opencv/image_geometry/include/**",
+        "/home/a/catkin_ws/src/imu_tools/imu_complementary_filter/include/**",
+        "/home/a/catkin_ws/src/imu_tools/imu_filter_madgwick/include/**",
+        "/home/a/lidar_ws/src/iscloam/include/**",
+        "/home/a/lidar_ws/src/lidar_ground_removal/include/**",
+        "/home/a/lidar_ws/src/ndt_localizer/include/**",
+        "/home/a/catkin_ws/src/odom_simul/include/**",
+        "/home/a/catkin_ws/src/realsense-ros/realsense2_camera/include/**",
+        "/home/a/catkin_ws/src/ssl_slam2/include/**",
+        "/home/a/catkin_ws/src/ssl_slam3/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
