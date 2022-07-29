@@ -30,6 +30,11 @@ if(NOT EIGEN3_FOUND)
 else()
   set(EIGEN3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
 endif()
+find_package(OpenMP)
+if(OPENMP_FOUND)
+  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif() 
 find_package(GeographicLib REQUIRED)
 find_package(Boost REQUIRED COMPONENTS timer thread)
 find_package(PCL REQUIRED)
@@ -47,6 +52,12 @@ include_directories(
   ${GTSAM_INCLUDE_DIR}
 )
 
+add_library(ndt_omp
+  src/voxel_grid_covariance_omp.cpp
+  src/ndt_omp.cpp
+  src/gicp_omp.cpp
+)
+
 link_directories(
   include
   ${PCL_LIBRARY_DIRS}
@@ -54,6 +65,7 @@ link_directories(
   ${GTSAM_LIBRARY_DIRS}
   ${OpenCV_LIBRARY_DIRS}
 )
+
 add_message_files(
   FILES
   LoopInfo.msg
@@ -65,7 +77,7 @@ generate_messages(
 )
 catkin_package(
   CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs message_runtime
-  DEPENDS EIGEN3 PCL Ceres GTSAM
+  DEPENDS EIGEN3 PCL Ceres GTSAM ndt_omp
   INCLUDE_DIRS include
 )
 #GPS data to UTM coordinate node
@@ -112,6 +124,7 @@ target_link_libraries(ndt_matching_node
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
   ${EIGEN3_LIBRARIES}
+  ndt_omp
 )
 
   
