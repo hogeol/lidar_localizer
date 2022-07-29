@@ -10,14 +10,15 @@
 
   <!-- gps & imu arguments -->
   <arg name="imu_topic" default="vectornav/IMU" />
+  <arg name="window_size" default="2" />
   
   <!-- lidar filtering arguments -->
   <arg name="laser_topic" default="/velodyne_points" />
   <arg name="scan_line" default="32" />
-  <arg name="max_distance" default="100.0" />
-  <arg name="min_distance" default="5.0" />
+  <arg name="max_distance" default="150.0" />
+  <arg name="min_distance" default="10.0" />
   <arg name="vertical_resolution" default="0.33" />
-  <arg name="filtering_leaf_size" default="0.2" />
+  <arg name="filtering_leaf_size" default="1.5" />
     <!-- <arg name="pcd_map_name" default="dlo_map.pcd" /> -->
   <arg name="robot_x_min" default="-2.0" />
   <arg name="robot_x_max" default="2.0" />
@@ -26,22 +27,32 @@
   <arg name="robot_z_min" default="-1.0" />
   <arg name="robot_z_max" default="1.0" />
   <!-- ndt arguments -->
-  <arg name="map_resolution" default="0.1" />
+  <!-- <arg name="init_x" default="0.0" />
+  <arg name="init_y" default="0.0" />
+  <arg name="init_z" default="0.0" /> -->
+  <arg name="init_x" default="-78.956013" />
+  <arg name="init_y" default="-514.205941" />
+  <arg name="init_z" default="6.874900" />
+  <arg name="init_rotation" default="0.96" />
+  <arg name="map_resolution" default="1.5" />
   <arg name="map_path" default="$(find velodyne_ndt)/map/" />
-  <!-- <arg name="map_name" default="kcity_test6.pcd" /> -->
-  <arg name="map_name" default="leaf_0.1.pcd" />
-  <arg name="leaf_size" default="0.2" />
+  <arg name="map_name" default="leaf_0.2.pcd" />
     <!-- submap_select 1 is k-nearest search, 0 is radius search-->
   <arg name="submap_select" default="1" />
   <arg name="kdtree_search_radius" default="200.0" />
   <arg name="ndt_near_points" default="400000" />
   <arg name="ndt_max_iteration" default="1000" />
+  <arg name="ndt_max_threads" default="15" />
     <!-- transform matrix info if needed-->
   <arg name="rotation_theta" default="0.0" />
-  <arg name="translation_x" default="-78.956013" />
+  <!-- <arg name="translation_x" default="-78.956013" />
   <arg name="translation_y" default="-514.205941" />
-  <arg name="translation_z" default="6.874900" />
-  
+  <arg name="translation_z" default="6.874900" /> -->
+  <arg name="translation_x" default="0.0" />
+  <arg name="translation_y" default="0.0" />
+  <arg name="translation_z" default="0.0" />
+
+
   <!-- rviz -->
   <arg name="rviz" default="true" />
   
@@ -57,6 +68,7 @@
   
   <!-- gps & imu parameters-->
   <param name="imu_topic" type="string" value="$(arg imu_topic)" />
+  <param name="window_size" type="int" value="$(arg window_size)" />
 
   <!-- lidar filtering parameters -->
   <param name="laser_topic" type="string" value="$(arg laser_topic)" />
@@ -73,14 +85,18 @@
   <param name="robot_z_max" type="double" value="$(arg robot_z_max)" />
 
   <!-- ndt parameters -->
+  <param name="init_x" type="double" value="$(arg init_x)" />
+  <param name="init_y" type="double" value="$(arg init_y)" />
+  <param name="init_z" type="double" value="$(arg init_z)" />
+  <param name="init_rotation" type="double" value="$(arg init_rotation)" />
   <param name="map_resolution" type="double" value="$(arg map_resolution)" />
   <param name="map_path" type="string" value="$(arg map_path)" />
   <param name="map_name" type="string" value="$(arg map_name)" />
-  <param name="leaf_size" type="double" value="$(arg leaf_size)" />
   <param name="submap_select" type="bool" value="$(arg submap_select)" />
   <param name="kdtree_search_radius" type="double" value="$(arg kdtree_search_radius)" />
   <param name="ndt_near_points" type="int" value="$(arg ndt_near_points)" />
   <param name="ndt_max_iteration" type="int" value="$(arg ndt_max_iteration)" />
+  <param name="ndt_max_threads" type="int" value="$(arg ndt_max_threads)" />
   <param name="rotation_theta" type="double" value="$(arg rotation_theta)" />
   <param name="translation_x" type="double" value="$(arg translation_x)" />
   <param name="translation_y" type="double" value="$(arg translation_y)" />
@@ -93,10 +109,12 @@
   </node>
   <node pkg="velodyne_ndt" type="ndt_matching_node" name="ndt_matching_node" output="screen">
   </node>
+  <node pkg="velodyne_ndt" type="gps_imu_node" name="gps_imu_node" output="log">
+  </node>
 
   <node pkg="map_server" name="map_server" type="map_server" args="$(find velodyne_ndt)/map/global_map.yaml"/>
-  <node pkg="tf" type="static_transform_publisher" name="map2velodyne" args="0 0 0 0 0 0 /map /velodyne 10" />
-  <node pkg="tf" type="static_transform_publisher" name="map2imu" args="0 0 0 0 0 0 /map /vectornav 10" />
+  <node pkg="tf" type="static_transform_publisher" name="map2velodyne" args="0 0 0 0 0 0 /base_link /velodyne 10" />
+  <node pkg="tf" type="static_transform_publisher" name="map2imu" args="0 0 0 0 0 0 /base_link /vectornav 10" />
 
   <group if="$(arg rviz)">
     <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find velodyne_ndt)/rviz/velodyne_point_rviz.rviz" />

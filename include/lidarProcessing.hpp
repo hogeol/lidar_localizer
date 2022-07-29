@@ -39,8 +39,8 @@ namespace LidarProcessing{
     void setLidar(const int &scan_line, const double &max_distance, const double &min_distance, const double &vertical_angle, const double &downsampling_size);
     void setRobot (const double &x_min, const double &x_max, const double &y_min, const double &y_max, const double &z_min , const double &z_max);
     void featureExtraction(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out);
-    void colorize(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_out, const std::vector<int> &color);
     void distanceFilter(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out);
+    void colorize(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_out, const std::vector<int> &color);
       lidarProcessingClass(void);
   };
 }

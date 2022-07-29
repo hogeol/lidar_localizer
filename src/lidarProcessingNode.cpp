@@ -87,9 +87,9 @@ int main(int argc, char** argv)
   lidar_processing.setLidar(scan_line, max_distance, min_distance, vertical_angle, filtering_leaf_size);
   lidar_processing.setRobot(robot_x_min, robot_x_max, robot_y_min, robot_y_max, robot_z_min, robot_z_max);
 
-  ros::Subscriber lidarSub = nh.subscribe<sensor_msgs::PointCloud2>(laser_topic, 100, laserCallback);
+  ros::Subscriber lidarSub = nh.subscribe<sensor_msgs::PointCloud2>(laser_topic, 1, laserCallback);
 
-  filtered_lidar_pub = nh.advertise<sensor_msgs::PointCloud2>("/filtered_point", 100);
+  filtered_lidar_pub = nh.advertise<sensor_msgs::PointCloud2>("/filtered_point", 1);
 
   std::thread laserProcessingProcess{laserProcessing};
 

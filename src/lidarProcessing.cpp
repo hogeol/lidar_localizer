@@ -74,22 +74,7 @@ namespace LidarProcessing{
     
     //colorize(down_pcd, pc_out, {255, 0, 0});
   }
-  void lidarProcessingClass::colorize(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_out, const std::vector<int> &color)
-  {
-    pc_out->clear();
-    int input_points_size = pc_in->points.size();
-    pcl::PointXYZRGB pc_out_tmp;
-    for(int point_iter=0; point_iter<input_points_size; point_iter++){
-      const auto &pt_iter = pc_in->points[point_iter];
-      pc_out_tmp.x = pt_iter.x;
-      pc_out_tmp.y = pt_iter.y;
-      pc_out_tmp.z = pt_iter.z;
-      pc_out_tmp.r = color[0];
-      pc_out_tmp.g = color[1];
-      pc_out_tmp.b = color[2];
-      pc_out->points.emplace_back(pc_out_tmp);
-    }
-  }
+
   void lidarProcessingClass::distanceFilter(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out)
   {
     pc_out->clear();
@@ -108,8 +93,21 @@ namespace LidarProcessing{
     }
   }
 
-  lidarProcessingClass::lidarProcessingClass(void)
+  void lidarProcessingClass::colorize(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_out, const std::vector<int> &color)
   {
+    pc_out->clear();
+    int input_points_size = pc_in->points.size();
+    pcl::PointXYZRGB pc_out_tmp;
+    for(int point_iter=0; point_iter<input_points_size; point_iter++){
+      const auto &pt_iter = pc_in->points[point_iter];
+      pc_out_tmp.x = pt_iter.x;
+      pc_out_tmp.y = pt_iter.y;
+      pc_out_tmp.z = pt_iter.z;
+      pc_out_tmp.r = color[0];
+      pc_out_tmp.g = color[1];
+      pc_out_tmp.b = color[2];
+      pc_out->points.emplace_back(pc_out_tmp);
+    }
   }
   
   void robotDimension::setRobotX(const double &robot_x_min, const double &robot_x_max)
@@ -128,6 +126,10 @@ namespace LidarProcessing{
   {
     m_robot_z_min = robot_z_min;
     m_robot_z_max = robot_z_max;
+  }
+
+  lidarProcessingClass::lidarProcessingClass(void)
+  {
   }
 
   robotDimension::robotDimension(void)

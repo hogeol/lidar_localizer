@@ -10,21 +10,28 @@
 //ros
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <tf/tf.h>
+#include <tf/transform_datatypes.h>
+#include <tf/transform_broadcaster.h>
+
 //local lib
-#include <opencv2/core/types.hpp>
 #include "ndtMatching.hpp"
 
 //subscriber
 //publisher
 ros::Publisher map_pub;
 ros::Publisher ndt_pub;
+ros::Publisher odom_pub;
 
 NdtMatching::ndtMatching ndt_matching;
 std::queue<sensor_msgs::PointCloud2ConstPtr> lidar_buf;
+std::queue<nav_msgs::OdometryConstPtr> odom_buf;
 
 std::mutex mutex_lock;
-
-cv::Point3d virtual_point3d(0.0, 0.0, 0.0);
 
 void lidarHandler(const sensor_msgs::PointCloud2ConstPtr &filtered_msg)
 {
@@ -33,28 +40,63 @@ void lidarHandler(const sensor_msgs::PointCloud2ConstPtr &filtered_msg)
   mutex_lock.unlock();
 }
 
+void odomCallback(const nav_msgs::OdometryConstPtr &odom_msg)
+{
+  mutex_lock.lock();
+  odom_buf.push(odom_msg);
+  mutex_lock.unlock();
+}
+
 void ndtMatching()
 {
   while(1){
-    if(!lidar_buf.empty()){
+    if(!lidar_buf.empty() && !odom_buf.empty()){
       //point ros to pointcloud
       mutex_lock.lock();
       pcl::PointCloud<pcl::PointXYZI>::Ptr point_in(new pcl::PointCloud<pcl::PointXYZI>());
       pcl::PointCloud<pcl::PointXYZI>::Ptr point_out(new pcl::PointCloud<pcl::PointXYZI>());
+      
       pcl::fromROSMsg(*lidar_buf.front(), *point_in);
       ros::Time point_in_time = lidar_buf.front()->header.stamp;
+      ros::Time odom_in_time = odom_buf.front()->header.stamp;
       //ROS_INFO("\n---\npoint_time: %.3f\nimu_time: %.3f", point_in_time, imu_in_time);
+      odom_buf.pop();
       lidar_buf.pop();
       mutex_lock.unlock();
       
       //after ndt matching
-      ndt_matching.processNdt(point_in, point_out, virtual_point3d);
+      Eigen::Matrix4f result_pose = Eigen::Matrix4f::Identity();
+      ndt_matching.processNdt(point_in, point_out, result_pose);
+      Eigen::Quaternionf q(result_pose.block<3,3>(0,0));
+      q.normalize();
+
       sensor_msgs::PointCloud2 ndt_msg;
       pcl::toROSMsg(*point_out, ndt_msg);
       ndt_msg.header.stamp = point_in_time;
-      ndt_msg.header.frame_id = "velodyne";
+      ndt_msg.header.frame_id = "map";
       ndt_pub.publish(ndt_msg);
       
+      geometry_msgs::Pose pose_msg;
+      pose_msg.position.x = result_pose(0,3);
+      pose_msg.position.y = result_pose(1,3);
+      pose_msg.position.z = result_pose(2,3);
+      pose_msg.orientation.w = q.w();
+      pose_msg.orientation.x = q.x();
+      pose_msg.orientation.y = q.y();
+      pose_msg.orientation.z = q.z();
+      nav_msgs::Odometry odom_msg;
+      odom_msg.header.frame_id = "map";
+      odom_msg.child_frame_id = "base_link";
+      odom_msg.header.stamp = point_in_time;
+      odom_msg.pose.pose = pose_msg;
+      
+      static tf::TransformBroadcaster br;
+      tf::Transform transform;
+      transform.setOrigin(tf::Vector3(result_pose(0,3), result_pose(1,3), result_pose(2,3)));
+      tf::Quaternion q_tf(q.x(), q.y(), q.z(), q.w());
+      transform.setRotation(q_tf);
+      br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "map", "base_link"));
+      odom_pub.publish(odom_msg);
       //map publish
       sensor_msgs::PointCloud2 map_msg;
       pcl::toROSMsg(*(ndt_matching.mp_pcd_map), map_msg);
@@ -72,41 +114,53 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "ndtMatching");
   ros::NodeHandle nh;
   
-  double map_resolution = 0.1;
-  double downsampling_leaf_size = 0.1;
+  double map_resolution = 2.0;
   double search_radius = 150.0;
-  int near_points = 500000;
+  int ndt_near_points = 500000;
   int ndt_max_iteration = 50;
+  int ndt_max_threads = 15;
   bool submap_select=1;
+  double init_x = 0.0;
+  double init_y = 0.0;
+  double init_z = 0.0;
+  double init_rotation=0.96;
 
   double rotation_theta=0.0;
   double translation_x=0.0;
   double translation_y=0.0;
   double translation_z=0.0;
-  
+
   std::string map_path = "/home/a/ace_ws/src/velodyne_ndt/map/";
   std::string map_name = "map.pcd";
 
   nh.getParam("map_resolution", map_resolution);
-  nh.getParam("leaf_size", downsampling_leaf_size);
   nh.getParam("map_path", map_path);
   nh.getParam("map_name", map_name);
   nh.getParam("submap_select", submap_select);
   nh.getParam("kdtree_search_radius", search_radius);
-  nh.getParam("ndt_near_points", near_points);
+  nh.getParam("ndt_near_points", ndt_near_points);
   nh.getParam("ndt_max_iteration", ndt_max_iteration);
   nh.getParam("rotation_theta", rotation_theta);
   nh.getParam("translation_x", translation_x);
   nh.getParam("translation_y", translation_y);
   nh.getParam("translation_z", translation_z);
+  nh.getParam("init_x", init_x);
+  nh.getParam("init_y", init_y);
+  nh.getParam("init_z", init_z);
+  nh.getParam("init_rotation", init_rotation);
+  nh.getParam("ndt_max_threads", ndt_max_threads);
   
   ndt_matching.setTransformInfo(rotation_theta, translation_x, translation_y, translation_z);
-  ndt_matching.init(map_resolution, map_path, map_name, downsampling_leaf_size, submap_select, search_radius, near_points, ndt_max_iteration);
+  ndt_matching.setInitPosition(init_x, init_y, init_z, init_rotation);
+  ndt_matching.init(map_resolution, map_path, map_name, submap_select, search_radius, ndt_near_points, ndt_max_iteration, ndt_max_threads);
 
-  ros::Subscriber filtered_lidar_sub = nh.subscribe<sensor_msgs::PointCloud2>("/filtered_point", 100, lidarHandler);
+  ros::Subscriber filtered_lidar_sub = nh.subscribe<sensor_msgs::PointCloud2>("/filtered_point", 1, lidarHandler);
+  ros::Subscriber gps_odom_sub = nh.subscribe<nav_msgs::Odometry>("/gps_odom", 1, odomCallback);
+  
+  map_pub = nh.advertise<sensor_msgs::PointCloud2>("/pcd_map", 1);
+  ndt_pub = nh.advertise<sensor_msgs::PointCloud2>("/ndt", 1);
+  odom_pub = nh.advertise<nav_msgs::Odometry>("/ndt_odom", 1);
 
-  map_pub = nh.advertise<sensor_msgs::PointCloud2>("/pcd_map", 100);
-  ndt_pub = nh.advertise<sensor_msgs::PointCloud2>("/ndt", 100);
   std::thread ndtMatchingProcess{ndtMatching};
 
   ros::spin();

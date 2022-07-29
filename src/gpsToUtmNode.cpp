@@ -121,8 +121,8 @@ int main(int argc, char **argv)
   gpsToUtmClass.init(hemisphere, zone);
   gpsToUtmClass.setGpsOffset(offset_x, offset_y, offset_z);
 
-  ros::Subscriber gps_sub = nh.subscribe("/fix",100 ,gpsCallback);
-  utm_pub = nh.advertise<geometry_msgs::PointStamped>("/utm", 100);
+  ros::Subscriber gps_sub = nh.subscribe("/fix",1 ,gpsCallback);
+  utm_pub = nh.advertise<geometry_msgs::PointStamped>("/utm", 1);
   //utm_pub = nh.advertise<geometry_msgs::Pose>("/utm", 100);
 
   std::thread gpsToUtmProcess{gpsToUtm};
