@@ -2,7 +2,8 @@
 #define _GPS_TO_UTM_
 
 #include <cmath>
-#include <vector>
+#include <Eigen/Core>
+#include <Eigen/Dense>
 #include <string>
 #include <GeographicLib/TransverseMercator.hpp>
 
@@ -32,7 +33,7 @@ namespace GpsToUtm{
   
   public:
     void init(const std::string &hemi, const int &zone);
-    void gpsConvertToUtm(const double &latitude, const double &longitude, const double &altitude, std::vector<double> &xyz_out);
+    void gpsConvertToUtm(const double &latitude, const double &longitude, const double &altitude, Eigen::Vector3d &pose_out);
     void setGpsOffset(const double &x, const double &y, const double &z);
     std::string getHemi();
     double getZone();

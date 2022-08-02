@@ -76,7 +76,7 @@ namespace NdtMatching{
     pcl::PointCloud<pcl::PointXYZI>::Ptr aligned_pcd(new pcl::PointCloud<pcl::PointXYZI>());
     m_ndt->align(*aligned_pcd, m_prev_pose);
     if(m_ndt->hasConverged())
-      printf("--\nscore: %.4f, iteration: %d\n---\n", m_ndt->getFitnessScore(), m_ndt->getFinalNumIteration());
+      //printf("--\nscore: %.4f, iteration: %d\n---\n", m_ndt->getFitnessScore(), m_ndt->getFinalNumIteration());
     //In fitness score, lower is better
     pcl::transformPointCloud(*pc_in, *pc_out, m_ndt->getFinalTransformation());
     //*m_map_registor += *pc_out;
@@ -86,14 +86,14 @@ namespace NdtMatching{
     out_pose = m_prev_pose;    
     end = clock();
 
-    for(int i=0; i<4; i++){
-      for(int j=0; j<4; j++){
-        printf("matrix[%d, %d]: %.4f, ", i, j, out_pose(i,j));
-      }
-      printf("\n");
-    }
+    // for(int i=0; i<4; i++){
+    //   for(int j=0; j<4; j++){
+    //     printf("matrix[%d, %d]: %.4f, ", i, j, out_pose(i,j));
+    //   }
+    //   printf("\n");
+    // }
     double result_time = (double)(end - start)/CLOCKS_PER_SEC;
-    printf("\nndt_time: %f", result_time);
+    //printf("\nndt_time: %f", result_time);
   }
 
   void ndtMatching::processNdtWithColor(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_out, Eigen::Matrix4f &out_pose)

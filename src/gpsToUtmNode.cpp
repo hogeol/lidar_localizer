@@ -3,14 +3,13 @@
 #include <queue>
 #include <thread>
 #include <mutex>
+#include <Eigen/Core>
+#include <Eigen/Dense>
 //ros
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/Pose.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <std_msgs/Header.h>
-#include <tf/transform_datatypes.h>
-#include <tf/transform_broadcaster.h>
 #include <tf/tf.h>
 //local lib
 #include "gpsToUtm.hpp"
@@ -43,33 +42,21 @@ void gpsToUtm()
       double altitude = gps_buf.front()->altitude;
       gps_buf.pop();
       mutex_lock.unlock();
-      std::vector<double> utm_xyz;
-      gpsToUtmClass.gpsConvertToUtm(latitude, longitude, altitude, utm_xyz);
+      Eigen::Vector3d utm_pose;
+      gpsToUtmClass.gpsConvertToUtm(latitude, longitude, altitude, utm_pose);
         
       geometry_msgs::PoseStamped local_pose;
       tf::Quaternion q;
       q.setRPY(0.0, 0.0, 0.0);
       local_pose.header = gps_in_header;
-      local_pose.pose.position.x = utm_xyz[0];
-      local_pose.pose.position.y = utm_xyz[1];
-      local_pose.pose.position.z = utm_xyz[2];
+      local_pose.pose.position.x = utm_pose(0);
+      local_pose.pose.position.y = utm_pose(1);
+      local_pose.pose.position.z = utm_pose(2);
       local_pose.pose.orientation.w = q.w();
       local_pose.pose.orientation.x = q.x();
       local_pose.pose.orientation.y = q.y();
       local_pose.pose.orientation.z = q.z();
-      // geometry_msgs::Pose local_pose;
-      // tf::Quaternion q;
-      // q.setRPY(0.0, 0.0, 0.0);
-      // local_pose.position.x = utm_xyz[0];
-      // local_pose.position.y = utm_xyz[1];
-      // local_pose.position.z = utm_xyz[2];
-      // local_pose.orientation.w = q.w();
-      // local_pose.orientation.x = q.x();
-      // local_pose.orientation.y = q.y();
-      // local_pose.orientation.z = q.z();
-
       utm_pub.publish(local_pose);
-      utm_xyz.clear();
         
       // ROS_INFO("Convert to x: [%f]", local_pose.pose.position.x);
       // ROS_INFO("Convert to y: [%f]", local_pose.pose.position.y);

@@ -42,7 +42,7 @@
   <arg name="kdtree_search_radius" default="200.0" />
   <arg name="ndt_near_points" default="400000" />
   <arg name="ndt_max_iteration" default="1000" />
-  <arg name="ndt_max_threads" default="10" />
+  <arg name="ndt_max_threads" default="12" />
     <!-- transform matrix info if needed-->
   <arg name="rotation_theta" default="0.0" />
   <!-- <arg name="translation_x" default="-78.956013" />
@@ -103,7 +103,7 @@
   <param name="translation_z" type="double" value="$(arg translation_z)" />
   
   <!-- node -->
-  <node pkg="lidar_localizer" type="gps_to_utm_node" name="gps_to_utm_node" output="log">
+  <node pkg="lidar_localizer" type="gps_to_utm_node" name="gps_to_utm_node" output="screen">
   </node>
   <node pkg="lidar_localizer" type="lidar_processing_node" name="lidar_processing_node" output="screen">
   </node>
