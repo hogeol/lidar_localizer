@@ -8,6 +8,7 @@
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/filters/approximate_voxel_grid.h>
 #include <pcl/filters/extract_indices.h>
+#include <pcl/filters/radius_outlier_removal.h>
 
 #include <vector>
 #include <cmath>
@@ -16,17 +17,17 @@
 namespace LidarProcessing{
 
   class robotDimension{
-    public:   
-      double m_robot_x_min;
-      double m_robot_x_max;
-      double m_robot_y_min;
-      double m_robot_y_max;
-      double m_robot_z_min;
-      double m_robot_z_max;
-      void setRobotX(const double &robot_x_min, const double &robot_x_max);
-      void setRobotY(const double &robot_y_min, const double &robot_y_max);
-      void setRobotZ(const double &robot_z_min, const double &robot_z_max);
-        robotDimension(void);
+  public:   
+    double m_robot_x_min;
+    double m_robot_x_max;
+    double m_robot_y_min;
+    double m_robot_y_max;
+    double m_robot_z_min;
+    double m_robot_z_max;
+    void setRobotX(const double &robot_x_min, const double &robot_x_max);
+    void setRobotY(const double &robot_y_min, const double &robot_y_max);
+    void setRobotZ(const double &robot_z_min, const double &robot_z_max);
+      robotDimension(void);
   };
   
   class lidarProcessingClass{

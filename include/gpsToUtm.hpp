@@ -15,20 +15,20 @@ namespace GpsToUtm{
   };//origin point
   
   class gpsToUtm{ 
-   private:
-   const double m_kNN = 0;
-   const double m_kNS = 10000000.0;
-   const double m_kE0 = 500000.0;
-   double m_at = 6378137.0; //unit in m
-   double m_fla = 1.0/298.257223563; 
-   double m_k0 = 0.9996;
+  private:
+    const double m_kNN = 0;
+    const double m_kNS = 10000000.0;
+    const double m_kE0 = 500000.0;
+    double m_at = 6378137.0; //unit in m
+    double m_fla = 1.0/298.257223563; 
+    double m_k0 = 0.9996;
 
-   std::string m_hemi;
-   int m_zone;
-   double m_offset_x;
-   double m_offset_y;
-   double m_offset_z;
-   basic m_cardinal;
+    std::string m_hemi;
+    int m_zone;
+    double m_offset_x;
+    double m_offset_y;
+    double m_offset_z;
+    basic m_cardinal;
   
   public:
     void init(const std::string &hemi, const int &zone);

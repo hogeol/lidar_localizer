@@ -25,11 +25,11 @@ namespace LidarProcessing{
     pcl::removeNaNFromPointCloud<pcl::PointXYZI>(*pc_in, *pc_in, nan_idx);
     //downsampling
     pcl::PointCloud<pcl::PointXYZI>::Ptr down_sampling_out(new pcl::PointCloud<pcl::PointXYZI>());
-    pcl::ApproximateVoxelGrid<pcl::PointXYZI> avg_filter;
-    avg_filter.setInputCloud(pc_in);
-    avg_filter.setLeafSize(m_leaf_size, m_leaf_size, m_leaf_size);
+    pcl::ApproximateVoxelGrid<pcl::PointXYZI>::Ptr avg_filter(new pcl::ApproximateVoxelGrid<pcl::PointXYZI>());
+    avg_filter->setInputCloud(pc_in);
+    avg_filter->setLeafSize(m_leaf_size, m_leaf_size, m_leaf_size);
     //avg_filter.filter(*down_sampling_out);
-    avg_filter.filter(*down_sampling_out);
+    avg_filter->filter(*down_sampling_out);
    
     //indices filter remove noise
     // pcl::PointCloud<pcl::PointXYZI>::Ptr rm_noise_out(new pcl::PointCloud<pcl::PointXYZI>());
@@ -47,30 +47,38 @@ namespace LidarProcessing{
     // //ext.filter(*rm_noise_out);
     // ext.filter(*pc_out);
 
-    // //passthrough filter
-    pcl::PointCloud<pcl::PointXYZI>::Ptr ptf_out(new pcl::PointCloud<pcl::PointXYZI>());
-    pcl::PassThrough<pcl::PointXYZI> pass_through;
-    pass_through.setInputCloud(down_sampling_out);
-    //pass_through.setInputCloud(rm_noise_out);
-    pass_through.setFilterFieldName("y");
-    pass_through.setFilterLimits(m_robot_info.m_robot_y_min, m_robot_info.m_robot_y_max);
-    pass_through.setFilterLimitsNegative(true);
-    pass_through.filter(*ptf_out);
-    //pass_through.filter(*pc_out);
+    //passthrough filter
+    // pcl::PointCloud<pcl::PointXYZI>::Ptr ptf_out(new pcl::PointCloud<pcl::PointXYZI>());
+    // pcl::PassThrough<pcl::PointXYZI>::Ptr pass_through(new pcl::PassThrough<pcl::PointXYZI>());
+    // pass_through->setInputCloud(down_sampling_out);
+    // //pass_through.setInputCloud(rm_noise_out);
+    // pass_through->setFilterFieldName("y");
+    // pass_through->setFilterLimits(m_robot_info.m_robot_y_min, m_robot_info.m_robot_y_max);
+    // pass_through->setFilterLimitsNegative(true);
+    // pass_through->filter(*ptf_out);
+    // //pass_through.filter(*pc_out);
     
     //statistical outrier removal
     int num_neighbor_points = 20;
     double std_multiplier = 10.0;
     pcl::PointCloud<pcl::PointXYZI>::Ptr sor_out(new pcl::PointCloud<pcl::PointXYZI>());
-    pcl::StatisticalOutlierRemoval<pcl::PointXYZI> sor_limover;
-    sor_limover.setInputCloud(ptf_out);
-    sor_limover.setMeanK(num_neighbor_points);
-    sor_limover.setStddevMulThresh(std_multiplier);
-    sor_limover.filter(*sor_out);
+    pcl::StatisticalOutlierRemoval<pcl::PointXYZI>::Ptr sor_removal(new pcl::StatisticalOutlierRemoval<pcl::PointXYZI>());
+    sor_removal->setInputCloud(down_sampling_out);
+    sor_removal->setMeanK(num_neighbor_points);
+    sor_removal->setStddevMulThresh(std_multiplier);
+    sor_removal->filter(*sor_out);
     //sor_limover.filter(*pc_out);
 
+    //radius outlier removal
+    pcl::PointCloud<pcl::PointXYZI>::Ptr rad_out(new pcl::PointCloud<pcl::PointXYZI>());
+    pcl::RadiusOutlierRemoval<pcl::PointXYZI>::Ptr rad_removal(new pcl::RadiusOutlierRemoval<pcl::PointXYZI>());
+    rad_removal->setInputCloud(sor_out);
+    rad_removal->setRadiusSearch(5.0);
+    rad_removal->setMinNeighborsInRadius(20);
+    rad_removal->setKeepOrganized(true);
+    rad_removal->filter(*rad_out);
     //distance filter
-    distanceFilter(sor_out, pc_out);
+    distanceFilter(rad_out, pc_out);
     
     //colorize(down_pcd, pc_out, {255, 0, 0});
   }

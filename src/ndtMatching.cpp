@@ -1,8 +1,7 @@
 #include "ndtMatching.hpp"
 
-
 namespace NdtMatching{
-  void ndtMatching::setTransformInfo(const double &theta, const double &x, const double &y, const double &z)
+  void ndtMatching::setMapTransformInfo(const double &theta, const double &x, const double &y, const double &z)
   {
     m_theta = theta;
     m_transform_x = x;
@@ -23,8 +22,8 @@ namespace NdtMatching{
     m_submap_select = submap_select;
     m_search_radius = search_radius;
     m_near_points = near_points;
-    m_max_iter = max_iter;
     
+    m_map_registor = pcl::PointCloud<pcl::PointXYZI>::Ptr(new pcl::PointCloud<pcl::PointXYZI>());
     mp_pcd_map = pcl::PointCloud<pcl::PointXYZI>::Ptr(new pcl::PointCloud<pcl::PointXYZI>());
     m_kd_tree = pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr(new pcl::KdTreeFLANN<pcl::PointXYZI>());
     m_ndt = pclomp::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>::Ptr(new pclomp::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>());
@@ -48,7 +47,7 @@ namespace NdtMatching{
     m_ndt->setResolution(1.0);
     //m_ndt->setNumThreads(omp_get_max_threads());
     m_ndt->setNumThreads(ndt_threads);
-    m_ndt->setMaximumIterations(m_max_iter);
+    m_ndt->setMaximumIterations(max_iter);
     m_ndt->setInputTarget(mp_pcd_map);
   }
 
@@ -77,9 +76,11 @@ namespace NdtMatching{
     pcl::PointCloud<pcl::PointXYZI>::Ptr aligned_pcd(new pcl::PointCloud<pcl::PointXYZI>());
     m_ndt->align(*aligned_pcd, m_prev_pose);
     if(m_ndt->hasConverged())
-      printf("--\nscore: %.4f, max_iter: %d, iteration: %d\n---\n", m_ndt->getFitnessScore(), m_max_iter, m_ndt->getFinalNumIteration());
+      printf("--\nscore: %.4f, iteration: %d\n---\n", m_ndt->getFitnessScore(), m_ndt->getFinalNumIteration());
     //In fitness score, lower is better
     pcl::transformPointCloud(*pc_in, *pc_out, m_ndt->getFinalTransformation());
+    //*m_map_registor += *pc_out;
+    //pc_out = m_map_registor;
 
     m_prev_pose = m_ndt->getFinalTransformation();
     out_pose = m_prev_pose;    
@@ -131,7 +132,7 @@ namespace NdtMatching{
     pcl::PointCloud<pcl::PointXYZI>::Ptr trans_pcd(new pcl::PointCloud<pcl::PointXYZI>());
     m_ndt->align(*aligned_pcd, m_prev_pose);
     if(m_ndt->hasConverged())
-      printf("--\nscore: %.4f, max_iter: %d, iteration: %d\n---\n", m_ndt->getFitnessScore(), m_max_iter, m_ndt->getFinalNumIteration());
+      printf("--\nscore: %.4f, max_iter: %d, iteration: %d\n---\n", m_ndt->getFitnessScore(), m_ndt->getFinalNumIteration());
     //In fitness score, lower is better
     pcl::transformPointCloud(*pc_in, *trans_pcd, m_ndt->getFinalTransformation());
     pcl::PointXYZRGB pc_out_tmp;
@@ -191,11 +192,12 @@ namespace NdtMatching{
 
   void ndtMatching::pcdMapTransform(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in)
   {
-    m_transform_matrix << std::cos(m_theta), -std::sin(m_theta), 0.0, m_transform_x,
+    Eigen::Matrix4f transform_matrix = Eigen::Matrix4f::Identity();
+    transform_matrix << std::cos(m_theta), -std::sin(m_theta), 0.0, m_transform_x,
                           std::sin(m_theta),  std::cos(m_theta), 0.0, m_transform_y,
                           0.0              ,  0.0              , 1.0, m_transform_z,
                           0.0              ,  0.0              , 0.0, 1.0; 
-    pcl::transformPointCloud(*pc_in, *mp_pcd_map, m_transform_matrix);
+    pcl::transformPointCloud(*pc_in, *mp_pcd_map, transform_matrix);
   }
 
   ndtMatching::ndtMatching(void)
