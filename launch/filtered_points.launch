@@ -36,11 +36,11 @@
   <param name="robot_z_max" type="double" value="$(arg robot_z_max)" />
 
   <!-- node -->
-  <node pkg="velodyne_ndt" type="lidar_processing_node" name="lidar_processing_node" output="screen">
+  <node pkg="lidar_localizer" type="lidar_processing_node" name="lidar_processing_node" output="screen">
   </node>
 
   <group if="$(arg rviz)">
-    <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find velodyne_ndt)/rviz/filtered_point_rviz.rviz" />
+    <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find lidar_localizer)/rviz/filtered_point_rviz.rviz" />
   </group>
 
 </launch>

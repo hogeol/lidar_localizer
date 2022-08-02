@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>velodyne_ndt</name>
+  <name>lidar_localizer</name>
   <version>0.0.0</version>
   <description>The lidar_ground_removal package</description>
 
