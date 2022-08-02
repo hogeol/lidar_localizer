@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(velodyne_ndt)
+project(lidar_localizer)
 
 set(CMAKE_CXX_FLAGS "-std=c++14")
 set(CMAKE_CXX_FLAGS "-O3 -Wall -g")
@@ -52,10 +52,10 @@ include_directories(
   ${GTSAM_INCLUDE_DIR}
 )
 
-add_library(ndt_omp
-  src/voxel_grid_covariance_omp.cpp
-  src/ndt_omp.cpp
-  src/gicp_omp.cpp
+add_library(pcl_omp
+  src/pclomp/voxel_grid_covariance_omp.cpp
+  src/pclomp/ndt_omp.cpp
+  src/pclomp/gicp_omp.cpp
 )
 
 link_directories(
@@ -66,18 +66,9 @@ link_directories(
   ${OpenCV_LIBRARY_DIRS}
 )
 
-add_message_files(
-  FILES
-  LoopInfo.msg
-)
-
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-)
 catkin_package(
   CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs message_runtime
-  DEPENDS EIGEN3 PCL Ceres GTSAM ndt_omp
+  DEPENDS EIGEN3 PCL Ceres GTSAM pcl_omp
   INCLUDE_DIRS include
 )
 #GPS data to UTM coordinate node
@@ -124,7 +115,20 @@ target_link_libraries(ndt_matching_node
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
   ${EIGEN3_LIBRARIES}
-  ndt_omp
+  pcl_omp
+)
+
+#gicp matching node
+add_executable(
+gicp_matching_node
+src/gicpMatching.cpp
+src/gicpMatchingNode.cpp
+)
+target_link_libraries(gicp_matching_node
+  ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
+  ${EIGEN3_LIBRARIES}
+  pcl_omp
 )
 
   
