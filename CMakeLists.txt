@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   rosbag
   std_msgs
   tf
+  tf_conversions
   eigen_conversions
   message_generation
   cv_bridge

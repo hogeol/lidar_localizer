@@ -6,7 +6,7 @@
     <!-- k-city-->
   <arg name="gps_offset_x" default="302533.174487" />
   <arg name="gps_offset_y" default="4124215.34631" />
-  <arg name="gps_offset_z" default="6.874900" />
+  <arg name="gps_offset_z" default="0.0" />
 
   <!-- gps & imu arguments -->
   <arg name="imu_topic" default="vectornav/IMU" />
@@ -16,9 +16,9 @@
   <arg name="laser_topic" default="/velodyne_points" />
   <arg name="scan_line" default="32" />
   <arg name="max_distance" default="150.0" />
-  <arg name="min_distance" default="10.0" />
+  <arg name="min_distance" default="5.0" />
   <arg name="vertical_resolution" default="0.33" />
-  <arg name="filtering_leaf_size" default="1.5" />
+  <arg name="filtering_leaf_size" default="1.0" />
     <!-- <arg name="pcd_map_name" default="dlo_map.pcd" /> -->
   <arg name="robot_x_min" default="-2.0" />
   <arg name="robot_x_max" default="2.0" />
@@ -30,19 +30,23 @@
   <!-- <arg name="init_x" default="0.0" />
   <arg name="init_y" default="0.0" />
   <arg name="init_z" default="0.0" /> -->
-  <arg name="init_x" default="-78.956013" />
+  <arg name="gps_init_pose" default="false" />
+  <!-- <arg name="init_x" default="-78.956013" />
   <arg name="init_y" default="-514.205941" />
+  <arg name="init_z" default="0.0" /> -->
+  <arg name="init_x" default="59.432510" />
+  <arg name="init_y" default="-33.730495" />
   <arg name="init_z" default="0.0" />
-  <arg name="init_rotation" default="0.96" />
-  <arg name="map_resolution" default="1.5" />
+  <arg name="init_rotation" default="-1.2" />
+  <arg name="map_resolution" default="1.0" />
   <arg name="map_path" default="$(find lidar_localizer)/map/" />
   <arg name="map_name" default="leaf_0.2.pcd" />
     <!-- submap_select 1 is k-nearest search, 0 is radius search-->
   <arg name="submap_select" default="1" />
   <arg name="kdtree_search_radius" default="200.0" />
   <arg name="ndt_near_points" default="400000" />
-  <arg name="ndt_max_iteration" default="1000" />
-  <arg name="ndt_max_threads" default="12" />
+  <arg name="ndt_max_iteration" default="50" />
+  <arg name="ndt_max_threads" default="10" />
     <!-- transform matrix info if needed-->
   <arg name="rotation_theta" default="0.0" />
   <!-- <arg name="translation_x" default="-78.956013" />
@@ -85,6 +89,7 @@
   <param name="robot_z_max" type="double" value="$(arg robot_z_max)" />
 
   <!-- ndt parameters -->
+  <param name="gps_init_pose" type="bool" value="$(arg gps_init_pose)" />
   <param name="init_x" type="double" value="$(arg init_x)" />
   <param name="init_y" type="double" value="$(arg init_y)" />
   <param name="init_z" type="double" value="$(arg init_z)" />

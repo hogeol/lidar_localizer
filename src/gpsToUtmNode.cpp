@@ -57,7 +57,7 @@ void gpsToUtm()
       local_pose.pose.orientation.y = q.y();
       local_pose.pose.orientation.z = q.z();
       utm_pub.publish(local_pose);
-        
+      
       // ROS_INFO("Convert to x: [%f]", local_pose.pose.position.x);
       // ROS_INFO("Convert to y: [%f]", local_pose.pose.position.y);
       // ROS_INFO("Convert to z: [%f]", local_pose.pose.position.z);

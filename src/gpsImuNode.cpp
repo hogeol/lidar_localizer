@@ -51,29 +51,22 @@ void gpsImu()
       ros::Time utm_in_time = utm_buf.front()->header.stamp;
       ros::Time imu_in_time = imu_buf.front()->header.stamp;
       Eigen::Vector3f pose_tmp(utm_buf.front()->point.x, utm_buf.front()->point.y, utm_buf.front()->point.z);
-      Eigen::Quaternionf eigen_quat(imu_buf.front()->orientation.x, imu_buf.front()->orientation.y, imu_buf.front()->orientation.z, imu_buf.front()->orientation.w);
+      Eigen::Quaterniond eigen_quat(imu_buf.front()->orientation.w, imu_buf.front()->orientation.x, imu_buf.front()->orientation.y, imu_buf.front()->orientation.z);
       imu_buf.pop();
       utm_buf.pop();
       mutex_lock.unlock();
-
-      Eigen::Matrix4f eigen_pose = Eigen::Matrix4f::Identity();
-      eigen_pose.block<3,3>(0,0) = eigen_quat.toRotationMatrix();
-      Eigen::AngleAxisf init_rot(0.1, Eigen::Vector3f::UnitZ());
-      Eigen::Translation3f init_translation(pose_tmp(0), pose_tmp(1), pose_tmp(2));
-      eigen_pose = (init_translation*init_rot).matrix()*eigen_pose;
-      eigen_quat = eigen_pose.block<3,3>(0,0);
       eigen_quat.normalize();
       nav_msgs::Odometry odom_msg;
       odom_msg.header.frame_id = "map";
       odom_msg.child_frame_id = "base_link";
       odom_msg.header.stamp = utm_in_time;
-      odom_msg.pose.pose.position.x = eigen_pose(0,3);
-      odom_msg.pose.pose.position.y = eigen_pose(1,3);
-      odom_msg.pose.pose.position.z = eigen_pose(2,3);
-      odom_msg.pose.pose.orientation.w = eigen_quat.w();
-      odom_msg.pose.pose.orientation.x = eigen_quat.x();
-      odom_msg.pose.pose.orientation.y = eigen_quat.y();
-      odom_msg.pose.pose.orientation.z = eigen_quat.z();
+      odom_msg.pose.pose.position.x = pose_tmp(0);
+      odom_msg.pose.pose.position.y = pose_tmp(1);
+      odom_msg.pose.pose.position.z = pose_tmp(2);
+      odom_msg.pose.pose.orientation.w = -eigen_quat.w();
+      odom_msg.pose.pose.orientation.x = -eigen_quat.x();
+      odom_msg.pose.pose.orientation.y = -eigen_quat.y();
+      odom_msg.pose.pose.orientation.z = -eigen_quat.z();
 
       odom_pub.publish(odom_msg);
     }

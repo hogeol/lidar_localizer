@@ -22,8 +22,6 @@ namespace NdtMatching{
     m_submap_select = submap_select;
     m_search_radius = search_radius;
     m_near_points = near_points;
-    
-    m_map_registor = pcl::PointCloud<pcl::PointXYZI>::Ptr(new pcl::PointCloud<pcl::PointXYZI>());
     mp_pcd_map = pcl::PointCloud<pcl::PointXYZI>::Ptr(new pcl::PointCloud<pcl::PointXYZI>());
     m_kd_tree = pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr(new pcl::KdTreeFLANN<pcl::PointXYZI>());
     m_ndt = pclomp::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>::Ptr(new pclomp::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>());
@@ -44,14 +42,14 @@ namespace NdtMatching{
     m_kd_tree->setInputCloud(mp_pcd_map);
     m_ndt->setTransformationEpsilon(0.001);
     m_ndt->setStepSize(0.1);
-    m_ndt->setResolution(1.0);
+    m_ndt->setResolution(2.0);
     //m_ndt->setNumThreads(omp_get_max_threads());
     m_ndt->setNumThreads(ndt_threads);
     m_ndt->setMaximumIterations(max_iter);
     m_ndt->setInputTarget(mp_pcd_map);
   }
 
-  void ndtMatching::processNdt(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, Eigen::Matrix4f &out_pose)
+  void ndtMatching::processNdt(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Vector3f &in_pose, Eigen::Matrix4f &out_pose)
   {
     clock_t start, end;
  
@@ -70,19 +68,25 @@ namespace NdtMatching{
     // }
     //NDT
     start = clock();
-    
     m_ndt->setInputSource(pc_in);
     
     pcl::PointCloud<pcl::PointXYZI>::Ptr aligned_pcd(new pcl::PointCloud<pcl::PointXYZI>());
     m_ndt->align(*aligned_pcd, m_prev_pose);
+    //m_ndt->align(*aligned_pcd);
     if(m_ndt->hasConverged())
-      //printf("--\nscore: %.4f, iteration: %d\n---\n", m_ndt->getFitnessScore(), m_ndt->getFinalNumIteration());
+      printf("--\nscore: %.4f, iteration: %d\n---\n", m_ndt->getFitnessScore(), m_ndt->getFinalNumIteration());
+    
     //In fitness score, lower is better
-    pcl::transformPointCloud(*pc_in, *pc_out, m_ndt->getFinalTransformation());
-    //*m_map_registor += *pc_out;
-    //pc_out = m_map_registor;
-
     m_prev_pose = m_ndt->getFinalTransformation();
+    
+    // Eigen::Vector3f ndt_xyz(m_prev_pose(0,3), m_prev_pose(1,3), m_prev_pose(2,3));
+    // Eigen::Vector3f gps_in_pose(in_pose(0), in_pose(1), in_pose(2));
+    // if(calDistance(gps_in_pose, ndt_xyz) > 5.0){
+        //m_prev_pose(0,3) = in_pose(0);
+        //m_prev_pose(1,3) = in_pose(1);
+        //m_prev_pose(2,3) = in_pose(2);
+    // }
+    pcl::transformPointCloud(*pc_in, *pc_out, m_prev_pose);
     out_pose = m_prev_pose;    
     end = clock();
 
@@ -96,7 +100,7 @@ namespace NdtMatching{
     //printf("\nndt_time: %f", result_time);
   }
 
-  void ndtMatching::processNdtWithColor(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_out, Eigen::Matrix4f &out_pose)
+  void ndtMatching::processNdtWithColor(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_out, const Eigen::Vector3f &in_pose, Eigen::Matrix4f &out_pose)
   {
     clock_t start, end;
     //voxelization
@@ -108,15 +112,16 @@ namespace NdtMatching{
 
     //radius based map filtering
     pcl::PointCloud<pcl::PointXYZI>::Ptr submap_pcd(new pcl::PointCloud<pcl::PointXYZI>());
-    cv::Point3d xyz_point = cv::Point3d(m_prev_pose(0,3), m_prev_pose(1,3), m_prev_pose(2,3));
+    Eigen::Vector3d based_point(m_prev_pose(0,3), m_prev_pose(1,3), m_prev_pose(2,3));
+    
     if(m_submap_select == 1){
       printf("\n---\nknearest_search\nsearch_points: %d\n", m_near_points);
-      kNearestSearch(xyz_point, submap_pcd);
+      kNearestSearch(based_point, submap_pcd);
       //kNearestSearch(xyz_point, pc_out);
     }
     else{
       printf("\n---\nradius_search\nsearch_radius: %.2f\n", m_search_radius);
-      radiusSearch(xyz_point, submap_pcd);
+      radiusSearch(based_point, submap_pcd);
       //radiusSearch(xyz_point, pc_out);
     }
     //NDT
@@ -160,14 +165,14 @@ namespace NdtMatching{
     printf("\nndt_time: %f", result_time);
   }
 
-  void ndtMatching::radiusSearch(const cv::Point3d &based_point, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out)
+  void ndtMatching::radiusSearch(const Eigen::Vector3d &based_point, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out)
   {
     std::vector<int> indices;
     std::vector<float> sqr_dists;
     pcl::PointXYZI base_query;
-    base_query.x = based_point.x;
-    base_query.y = based_point.y;
-    base_query.z = based_point.z;
+    base_query.x = based_point(0);
+    base_query.y = based_point(1);
+    base_query.z = based_point(2);
     base_query.intensity = 0.0;
     m_kd_tree->radiusSearch(base_query, m_search_radius, indices, sqr_dists);
     for(const auto &idx: indices){
@@ -175,14 +180,14 @@ namespace NdtMatching{
     }
   }
 
-  void ndtMatching::kNearestSearch(const cv::Point3d &based_point, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out)
+  void ndtMatching::kNearestSearch(const Eigen::Vector3d &based_point, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out)
   {
     std::vector<int> indices;
     std::vector<float> sqr_dists;
     pcl::PointXYZI base_query;
-    base_query.x = based_point.x;
-    base_query.y = based_point.y;
-    base_query.z = based_point.z;
+    base_query.x = based_point(0);
+    base_query.y = based_point(1);
+    base_query.z = based_point(2);
     base_query.intensity = 0.0;
     m_kd_tree->nearestKSearch(base_query, m_near_points, indices, sqr_dists);
     for(const auto &idx: indices){
@@ -199,7 +204,11 @@ namespace NdtMatching{
                           0.0              ,  0.0              , 0.0, 1.0; 
     pcl::transformPointCloud(*pc_in, *mp_pcd_map, transform_matrix);
   }
-
+  double ndtMatching::calDistance(const Eigen::Vector3f &gps_xyz, const Eigen::Vector3f &ndt_xyz)
+  {
+    return (sqrt(pow(gps_xyz(0) - ndt_xyz(0), 2) + pow(gps_xyz(1) - ndt_xyz(1), 2) + pow(gps_xyz(2) - ndt_xyz(2), 2)));    
+  }
+  
   ndtMatching::ndtMatching(void)
   {
   }

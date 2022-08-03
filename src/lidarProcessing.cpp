@@ -77,8 +77,14 @@ namespace LidarProcessing{
     rad_removal->setMinNeighborsInRadius(20);
     rad_removal->setKeepOrganized(true);
     rad_removal->filter(*rad_out);
+    
     //distance filter
+    //pcl::PointCloud<pcl::PointXYZI>::Ptr dis_out(new pcl::PointCloud<pcl::PointXYZI>());
     distanceFilter(rad_out, pc_out);
+
+    //colorize
+    //colorize(dis_out, pc_out, {255, 0, 0});
+    
     
     //colorize(down_pcd, pc_out, {255, 0, 0});
   }
