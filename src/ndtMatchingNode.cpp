@@ -20,6 +20,7 @@
 #include <tf_conversions/tf_eigen.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
+#include <std_srvs/Trigger.h>
 
 //local lib
 #include "ndtMatching.hpp"
@@ -37,6 +38,22 @@ std::queue<nav_msgs::OdometryConstPtr> gps_odom_buf;
 std::mutex mutex_lock;
 bool is_init;
 
+
+bool relocalizeCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+{
+  mutex_lock.lock();
+  Eigen::Vector3d gps_pose(gps_odom_buf.back()->pose.pose.position.x, gps_odom_buf.back()->pose.pose.position.y, gps_odom_buf.back()->pose.pose.position.z);
+  Eigen::Quaterniond gps_orientation(gps_odom_buf.back()->pose.pose.orientation.w, gps_odom_buf.back()->pose.pose.orientation.x, gps_odom_buf.back()->pose.pose.orientation.y, gps_odom_buf.back()->pose.pose.orientation.z);
+  Eigen::Matrix4d gps_in_pose = Eigen::Matrix4d::Identity();
+  gps_in_pose.block<3,3>(0,0) = gps_orientation.toRotationMatrix();
+  gps_in_pose(0,3) = gps_pose(0);
+  gps_in_pose(1,3) = gps_pose(1);
+  gps_in_pose(2,3) = gps_pose(2);
+  ndt_matching.relocalize(gps_in_pose.cast<float>());
+  mutex_lock.unlock();
+  res.success = true;
+  return true;
+}
 
 void lidarHandler(const sensor_msgs::PointCloud2ConstPtr &filtered_msg)
 {
@@ -65,7 +82,7 @@ void ndtMatching()
       pcl::fromROSMsg(*lidar_buf.front(), *point_in);
       ros::Time point_in_time = lidar_buf.front()->header.stamp;
       ros::Time odom_in_time = gps_odom_buf.back()->header.stamp;
-      Eigen::Vector3f gps_pose(gps_odom_buf.back()->pose.pose.position.x, gps_odom_buf.back()->pose.pose.position.y, gps_odom_buf.back()->pose.pose.position.z);
+      Eigen::Vector3d gps_pose(gps_odom_buf.back()->pose.pose.position.x, gps_odom_buf.back()->pose.pose.position.y, gps_odom_buf.back()->pose.pose.position.z);
       Eigen::Quaterniond gps_orientation(gps_odom_buf.back()->pose.pose.orientation.w, gps_odom_buf.back()->pose.pose.orientation.x, gps_odom_buf.back()->pose.pose.orientation.y, gps_odom_buf.back()->pose.pose.orientation.z);
       Eigen::Matrix4d gps_in_pose = Eigen::Matrix4d::Identity();
       gps_in_pose.block<3,3>(0,0) = gps_orientation.toRotationMatrix();
@@ -78,7 +95,7 @@ void ndtMatching()
         tf::matrixEigenToTF(gps_in_pose.block<3,3>(0,0), tf_rot_matrix);
         double roll = 0.0, pitch = 0.0, yaw = 0.0;
         tf_rot_matrix.getRPY(roll, pitch, yaw);
-        ndt_matching.setInitPosition(gps_pose(0), gps_pose(1), gps_pose(2), yaw);
+        ndt_matching.setInitPosition(gps_in_pose(0,3), gps_in_pose(1,3), gps_in_pose(2,3), yaw);
         ROS_INFO("\ngps inited\n");
         is_init = true;
         gps_odom_buf.pop();
@@ -95,7 +112,7 @@ void ndtMatching()
       Eigen::Matrix4f result_pose = Eigen::Matrix4f::Identity();
       ndt_matching.processNdt(point_in, point_out, gps_in_pose.cast<float>(), result_pose);
       Eigen::Quaternionf q(result_pose.block<3,3>(0,0));
-      q.normalize();
+      //q.normalize();
 
       sensor_msgs::PointCloud2 ndt_msg;
       pcl::toROSMsg(*point_out, ndt_msg);
@@ -192,6 +209,9 @@ int main(int argc, char** argv)
   map_pub = nh.advertise<sensor_msgs::PointCloud2>("/pcd_map", 1);
   ndt_pub = nh.advertise<sensor_msgs::PointCloud2>("/ndt", 1);
   odom_pub = nh.advertise<nav_msgs::Odometry>("/ndt_odom", 1);
+
+  //rellocalize service
+  ros::ServiceServer relocal_srv = nh.advertiseService("relocalize", relocalizeCallback);
 
   std::thread ndtMatchingProcess{ndtMatching};
 

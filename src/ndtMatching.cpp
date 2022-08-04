@@ -18,6 +18,7 @@ namespace NdtMatching{
 
   void ndtMatching::init(const double &map_resolution, const std::string &map_path, const std::string &map_name, const bool &submap_select, const double &search_radius, const int & near_points, const int &max_iter, const int &ndt_threads)
   {
+    m_local_count = 0;
     m_map_resolution = map_resolution;
     m_submap_select = submap_select;
     m_search_radius = search_radius;
@@ -40,35 +41,15 @@ namespace NdtMatching{
     //transform if UTM coordinate is not provided in mapping (lotation is only z-axis based)
     pcdMapTransform(map_after_downsampling_pcd);
     m_kd_tree->setInputCloud(mp_pcd_map);
-    m_ndt->setTransformationEpsilon(0.001);
+    m_ndt->setTransformationEpsilon(0.01);
     m_ndt->setStepSize(0.1);
-    m_ndt->setResolution(1.0);
+    m_ndt->setResolution(1.35);
     //m_ndt->setNumThreads(omp_get_max_threads());
     m_ndt->setNumThreads(ndt_threads);
     m_ndt->setMaximumIterations(max_iter);
     m_ndt->setInputTarget(mp_pcd_map);
   }
-  bool ndtMatching::initProcessNdt(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Matrix4f &pose_in, Eigen::Matrix4f &pose_out)
-  {
-    //NDT
-    m_ndt->setInputSource(pc_in);
-    
-    pcl::PointCloud<pcl::PointXYZI>::Ptr aligned_pcd(new pcl::PointCloud<pcl::PointXYZI>());
-    m_ndt->align(*aligned_pcd, m_prev_pose);
-    double ndt_score =  m_ndt->getFitnessScore();
-    if(m_ndt->hasConverged())
-      printf("--\nscore: %.4f, iteration: %d\n---\n", ndt_score, m_ndt->getFinalNumIteration());
-    
-    //In fitness score, lower is better
-    m_prev_pose = m_ndt->getFinalTransformation();
-    
-    pcl::transformPointCloud(*pc_in, *pc_out, m_prev_pose);
-    pose_out = m_prev_pose;    
-    if(ndt_score > 1.0){
-      return false;
-    }
-    return true;
-  }
+
   void ndtMatching::processNdt(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Matrix4f &pose_in, Eigen::Matrix4f &pose_out)
   {
     clock_t start, end;
@@ -86,11 +67,18 @@ namespace NdtMatching{
     
     //In fitness score, lower is better
     m_prev_pose = m_ndt->getFinalTransformation();
-    
+
     Eigen::Vector3f ndt_xyz(m_prev_pose(0,3), m_prev_pose(1,3), m_prev_pose(2,3));
     Eigen::Vector3f gps_in_pose(pose_in(0,3), pose_in(1,3), pose_in(2,3));
-    if(calDistance(gps_in_pose, ndt_xyz) > 1.5 && ndt_score > 0.1){
-      m_prev_pose = pose_in;
+    if(calDistance(gps_in_pose, ndt_xyz) > 2.5 && ndt_score > 0.15){
+        if(m_local_count%25 == 0){
+          m_prev_pose(0,3) = pose_in(0,3);
+          m_prev_pose(1,3) = pose_in(1,3);
+          m_prev_pose(2,3) = pose_in(2,3);
+          m_local_count = 0;
+        }
+        m_local_count++;
+        printf("\nlocal_count: %d\n", m_local_count);
     }
     pcl::transformPointCloud(*pc_in, *pc_out, m_prev_pose);
     pose_out = m_prev_pose;    
@@ -216,6 +204,11 @@ namespace NdtMatching{
     return (sqrt(pow(gps_xyz(0) - ndt_xyz(0), 2) + pow(gps_xyz(1) - ndt_xyz(1), 2)));    
   }
   
+  void ndtMatching::relocalize(const Eigen::Matrix4f &last_gps_odom)
+  {
+    m_prev_pose = last_gps_odom;
+  }
+
   ndtMatching::ndtMatching(void)
   {
   }

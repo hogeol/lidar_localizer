@@ -20,7 +20,7 @@
 //local lib
 #include "gpsImu.hpp"
 
-GpsImu::gpsImu gpsImuClass;
+GpsImu::gpsImu gps_imu;
 
 //publisher
 ros::Publisher odom_pub;
@@ -48,25 +48,29 @@ void gpsImu()
   while(1){
     if(!utm_buf.empty() && !imu_buf.empty()){
       mutex_lock.lock();
-      ros::Time utm_in_time = utm_buf.front()->header.stamp;
-      ros::Time imu_in_time = imu_buf.front()->header.stamp;
-      Eigen::Vector3f pose_tmp(utm_buf.front()->point.x, utm_buf.front()->point.y, utm_buf.front()->point.z);
-      Eigen::Quaterniond eigen_quat(imu_buf.front()->orientation.w, imu_buf.front()->orientation.x, imu_buf.front()->orientation.y, imu_buf.front()->orientation.z);
+      ros::Time utm_in_time = utm_buf.back()->header.stamp;
+      ros::Time imu_in_time = imu_buf.back()->header.stamp;
+      Eigen::Vector3f pose_tmp(utm_buf.back()->point.x, utm_buf.back()->point.y, utm_buf.back()->point.z);
+      Eigen::Quaterniond eigen_quat_in(imu_buf.back()->orientation.w, imu_buf.back()->orientation.x, imu_buf.back()->orientation.y, imu_buf.back()->orientation.z);
       imu_buf.pop();
       utm_buf.pop();
       mutex_lock.unlock();
-      eigen_quat.normalize();
+      double set_yaw = -0.1;
+      Eigen::Quaterniond eigen_quat_out;
+      gps_imu.setYaw(eigen_quat_in, eigen_quat_out, set_yaw);
+      eigen_quat_out.normalize();
       nav_msgs::Odometry odom_msg;
       odom_msg.header.frame_id = "map";
       odom_msg.child_frame_id = "base_link";
       odom_msg.header.stamp = utm_in_time;
       odom_msg.pose.pose.position.x = pose_tmp(0);
       odom_msg.pose.pose.position.y = pose_tmp(1);
-      odom_msg.pose.pose.position.z = pose_tmp(2);
-      odom_msg.pose.pose.orientation.w = -eigen_quat.w();
-      odom_msg.pose.pose.orientation.x = -eigen_quat.x();
-      odom_msg.pose.pose.orientation.y = -eigen_quat.y();
-      odom_msg.pose.pose.orientation.z = -eigen_quat.z();
+      //odom_msg.pose.pose.position.z = pose_tmp(2);
+      odom_msg.pose.pose.position.z = 0.0;
+      odom_msg.pose.pose.orientation.w = eigen_quat_out.w();
+      odom_msg.pose.pose.orientation.x = eigen_quat_out.x();
+      odom_msg.pose.pose.orientation.y = eigen_quat_out.y();
+      odom_msg.pose.pose.orientation.z = eigen_quat_out.z();
 
       odom_pub.publish(odom_msg);
     }

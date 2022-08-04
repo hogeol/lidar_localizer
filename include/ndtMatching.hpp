@@ -13,7 +13,6 @@
 
 #include <Eigen/Geometry>
 #include <Eigen/Dense>
-#include <tf_conversions/tf_eigen.h>
 
 #include <string>
 #include <vector>
@@ -23,6 +22,7 @@
 namespace NdtMatching{
   class ndtMatching{
   private:
+    int m_local_count;
     double m_map_resolution;
     bool m_submap_select;
     double m_search_radius;
@@ -38,12 +38,12 @@ namespace NdtMatching{
     void setMapTransformInfo(const double &theta, const double &x, const double &y, const double &z);
     void setInitPosition(const double &x, const double &y, const double &z, const double &theta);
     void init(const double &map_resolution, const std::string &map_path, const std::string &map_name, const bool &submap_select,const double &search_radius, const int &near_points, const int &max_iter, const int &ndt_threads);
-    bool initProcessNdt(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Matrix4f &pose_in, Eigen::Matrix4f &pose_out);
     void processNdt(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Matrix4f &pose_in, Eigen::Matrix4f &pose_out);
     void processNdtWithColor(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_out, const Eigen::Matrix4f &pose_in, Eigen::Matrix4f &pose_out);
     void radiusSearch(const Eigen::Vector3d &based_point, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out);
     void kNearestSearch(const Eigen::Vector3d &based_point, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out);
     void pcdMapTransform(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in);
+    void relocalize(const Eigen::Matrix4f &last_gps_odom);
     double calDistance(const Eigen::Vector3f &gps_xyz, const Eigen::Vector3f &ndt_xyz);
     pcl::PointCloud<pcl::PointXYZI>::Ptr mp_pcd_map;
       ndtMatching(void);
