@@ -38,8 +38,9 @@ namespace NdtMatching{
     void setMapTransformInfo(const double &theta, const double &x, const double &y, const double &z);
     void setInitPosition(const double &x, const double &y, const double &z, const double &theta);
     void init(const double &map_resolution, const std::string &map_path, const std::string &map_name, const bool &submap_select,const double &search_radius, const int &near_points, const int &max_iter, const int &ndt_threads);
-    void processNdt(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Vector3f &in_pose, Eigen::Matrix4f &out_pose);
-    void processNdtWithColor(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_out, const Eigen::Vector3f &in_pose, Eigen::Matrix4f &out_pose);
+    bool initProcessNdt(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Matrix4f &pose_in, Eigen::Matrix4f &pose_out);
+    void processNdt(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Matrix4f &pose_in, Eigen::Matrix4f &pose_out);
+    void processNdtWithColor(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_out, const Eigen::Matrix4f &pose_in, Eigen::Matrix4f &pose_out);
     void radiusSearch(const Eigen::Vector3d &based_point, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out);
     void kNearestSearch(const Eigen::Vector3d &based_point, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out);
     void pcdMapTransform(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in);

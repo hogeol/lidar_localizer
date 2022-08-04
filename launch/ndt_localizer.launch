@@ -18,7 +18,7 @@
   <arg name="max_distance" default="150.0" />
   <arg name="min_distance" default="5.0" />
   <arg name="vertical_resolution" default="0.33" />
-  <arg name="filtering_leaf_size" default="1.0" />
+  <arg name="filtering_leaf_size" default="1.2" />
     <!-- <arg name="pcd_map_name" default="dlo_map.pcd" /> -->
   <arg name="robot_x_min" default="-2.0" />
   <arg name="robot_x_max" default="2.0" />
@@ -36,9 +36,9 @@
   <arg name="init_z" default="0.0" /> -->
   <arg name="init_x" default="59.432510" />
   <arg name="init_y" default="-33.730495" />
-  <arg name="init_z" default="0.0" />
+  <arg name="init_z" default="-0.92" />
   <arg name="init_rotation" default="-1.2" />
-  <arg name="map_resolution" default="1.0" />
+  <arg name="map_resolution" default="1.2" />
   <arg name="map_path" default="$(find lidar_localizer)/map/" />
   <arg name="map_name" default="leaf_0.2.pcd" />
     <!-- submap_select 1 is k-nearest search, 0 is radius search-->
@@ -46,7 +46,7 @@
   <arg name="kdtree_search_radius" default="200.0" />
   <arg name="ndt_near_points" default="400000" />
   <arg name="ndt_max_iteration" default="50" />
-  <arg name="ndt_max_threads" default="10" />
+  <arg name="ndt_max_threads" default="12" />
     <!-- transform matrix info if needed-->
   <arg name="rotation_theta" default="0.0" />
   <!-- <arg name="translation_x" default="-78.956013" />
@@ -55,7 +55,6 @@
   <arg name="translation_x" default="0.0" />
   <arg name="translation_y" default="0.0" />
   <arg name="translation_z" default="-6.874900" />
-
 
   <!-- rviz -->
   <arg name="rviz" default="true" />

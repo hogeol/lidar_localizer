@@ -53,21 +53,6 @@ void gpsCallback(const nav_msgs::OdometryConstPtr &gps_odom_msg)
   mutex_lock.unlock();
 }
 
-void rvizCallback(const geometry_msgs::PoseWithCovarianceStampedConstPtr &pose_msg)
-{
-  mutex_lock.lock();
-  Eigen::Quaterniond eigen_orientation(pose_msg->pose.pose.orientation.w, pose_msg->pose.pose.orientation.x, pose_msg->pose.pose.orientation.y, pose_msg->pose.pose.orientation.z);
-  Eigen::Matrix3d eigen_rot;
-  eigen_rot.block<3,3>(0,0) = eigen_orientation.toRotationMatrix();
-  tf::Matrix3x3 tf_rot_mat;
-  tf::matrixEigenToTF(eigen_rot, tf_rot_mat);
-  double r,p,y;
-  tf_rot_mat.setRPY(r, p, y);
-  ndt_matching.setInitPosition(pose_msg->pose.pose.position.x, pose_msg->pose.pose.position.y, pose_msg->pose.pose.position.z, y);
-  is_init = true;
-  mutex_lock.unlock();
-}
-
 void ndtMatching()
 {
   while(1){
@@ -79,19 +64,23 @@ void ndtMatching()
       
       pcl::fromROSMsg(*lidar_buf.front(), *point_in);
       ros::Time point_in_time = lidar_buf.front()->header.stamp;
-      ros::Time odom_in_time = gps_odom_buf.front()->header.stamp;
-      Eigen::Vector3f gps_pose(gps_odom_buf.front()->pose.pose.position.x, gps_odom_buf.front()->pose.pose.position.y, gps_odom_buf.front()->pose.pose.position.z);
-      Eigen::Quaterniond gps_orientation(gps_odom_buf.front()->pose.pose.orientation.w, gps_odom_buf.front()->pose.pose.orientation.x, gps_odom_buf.front()->pose.pose.orientation.y, gps_odom_buf.front()->pose.pose.orientation.z);
+      ros::Time odom_in_time = gps_odom_buf.back()->header.stamp;
+      Eigen::Vector3f gps_pose(gps_odom_buf.back()->pose.pose.position.x, gps_odom_buf.back()->pose.pose.position.y, gps_odom_buf.back()->pose.pose.position.z);
+      Eigen::Quaterniond gps_orientation(gps_odom_buf.back()->pose.pose.orientation.w, gps_odom_buf.back()->pose.pose.orientation.x, gps_odom_buf.back()->pose.pose.orientation.y, gps_odom_buf.back()->pose.pose.orientation.z);
+      Eigen::Matrix4d gps_in_pose = Eigen::Matrix4d::Identity();
+      gps_in_pose.block<3,3>(0,0) = gps_orientation.toRotationMatrix();
+      gps_in_pose(0,3) = gps_pose(0);
+      gps_in_pose(1,3) = gps_pose(1);
+      gps_in_pose(2,3) = gps_pose(2);
       if(is_init == false){
-        Eigen::Matrix3d eigen_init_rot;
-        eigen_init_rot.block<3,3>(0,0) = gps_orientation.toRotationMatrix();
+        Eigen::Matrix4f result_pose = Eigen::Matrix4f::Identity();
         tf::Matrix3x3 tf_rot_matrix;
-        tf::matrixEigenToTF(eigen_init_rot, tf_rot_matrix);
+        tf::matrixEigenToTF(gps_in_pose.block<3,3>(0,0), tf_rot_matrix);
         double roll = 0.0, pitch = 0.0, yaw = 0.0;
         tf_rot_matrix.getRPY(roll, pitch, yaw);
-        ndt_matching.setInitPosition(gps_pose(0), gps_pose(1), gps_pose(2), -0.8);
-        is_init = true;
+        ndt_matching.setInitPosition(gps_pose(0), gps_pose(1), gps_pose(2), yaw);
         ROS_INFO("\ngps inited\n");
+        is_init = true;
         gps_odom_buf.pop();
         lidar_buf.pop();
         mutex_lock.unlock();  
@@ -104,7 +93,7 @@ void ndtMatching()
       
       //after ndt matching
       Eigen::Matrix4f result_pose = Eigen::Matrix4f::Identity();
-      ndt_matching.processNdt(point_in, point_out, gps_pose, result_pose);
+      ndt_matching.processNdt(point_in, point_out, gps_in_pose.cast<float>(), result_pose);
       Eigen::Quaternionf q(result_pose.block<3,3>(0,0));
       q.normalize();
 
@@ -199,7 +188,6 @@ int main(int argc, char** argv)
 
   ros::Subscriber filtered_lidar_sub = nh.subscribe<sensor_msgs::PointCloud2>("/filtered_point", 1, lidarHandler);
   ros::Subscriber gps_odom_sub = nh.subscribe<nav_msgs::Odometry>("/gps_odom", 1, gpsCallback);
-  ros::Subscriber rviz_pose_sub = nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 1, rvizCallback);
   
   map_pub = nh.advertise<sensor_msgs::PointCloud2>("/pcd_map", 1);
   ndt_pub = nh.advertise<sensor_msgs::PointCloud2>("/ndt", 1);

@@ -42,30 +42,37 @@ namespace NdtMatching{
     m_kd_tree->setInputCloud(mp_pcd_map);
     m_ndt->setTransformationEpsilon(0.001);
     m_ndt->setStepSize(0.1);
-    m_ndt->setResolution(2.0);
+    m_ndt->setResolution(1.0);
     //m_ndt->setNumThreads(omp_get_max_threads());
     m_ndt->setNumThreads(ndt_threads);
     m_ndt->setMaximumIterations(max_iter);
     m_ndt->setInputTarget(mp_pcd_map);
   }
-
-  void ndtMatching::processNdt(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Vector3f &in_pose, Eigen::Matrix4f &out_pose)
+  bool ndtMatching::initProcessNdt(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Matrix4f &pose_in, Eigen::Matrix4f &pose_out)
+  {
+    //NDT
+    m_ndt->setInputSource(pc_in);
+    
+    pcl::PointCloud<pcl::PointXYZI>::Ptr aligned_pcd(new pcl::PointCloud<pcl::PointXYZI>());
+    m_ndt->align(*aligned_pcd, m_prev_pose);
+    double ndt_score =  m_ndt->getFitnessScore();
+    if(m_ndt->hasConverged())
+      printf("--\nscore: %.4f, iteration: %d\n---\n", ndt_score, m_ndt->getFinalNumIteration());
+    
+    //In fitness score, lower is better
+    m_prev_pose = m_ndt->getFinalTransformation();
+    
+    pcl::transformPointCloud(*pc_in, *pc_out, m_prev_pose);
+    pose_out = m_prev_pose;    
+    if(ndt_score > 1.0){
+      return false;
+    }
+    return true;
+  }
+  void ndtMatching::processNdt(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Matrix4f &pose_in, Eigen::Matrix4f &pose_out)
   {
     clock_t start, end;
- 
-    //radius based map filtering
-    pcl::PointCloud<pcl::PointXYZI>::Ptr submap_pcd(new pcl::PointCloud<pcl::PointXYZI>());
-    // cv::Point3d xyz_point = cv::Point3d(m_prev_pose(0,3), m_prev_pose(1,3), m_prev_pose(2,3));
-    // if(m_submap_select == 1){
-    //   printf("\n---\nknearest_search\nsearch_points: %d\n", m_near_points);
-    //   kNearestSearch(xyz_point, submap_pcd);
-    //   //kNearestSearch(xyz_point, pc_out);
-    // }
-    // else{
-    //   printf("\n---\nradius_search\nsearch_radius: %.2f\n", m_search_radius);
-    //   radiusSearch(xyz_point, submap_pcd);
-    //   //radiusSearch(xyz_point, pc_out);
-    // }
+
     //NDT
     start = clock();
     m_ndt->setInputSource(pc_in);
@@ -73,21 +80,20 @@ namespace NdtMatching{
     pcl::PointCloud<pcl::PointXYZI>::Ptr aligned_pcd(new pcl::PointCloud<pcl::PointXYZI>());
     m_ndt->align(*aligned_pcd, m_prev_pose);
     //m_ndt->align(*aligned_pcd);
+    double ndt_score =  m_ndt->getFitnessScore();
     if(m_ndt->hasConverged())
-      printf("--\nscore: %.4f, iteration: %d\n---\n", m_ndt->getFitnessScore(), m_ndt->getFinalNumIteration());
+      printf("--\nscore: %.4f, iteration: %d\n---\n", ndt_score, m_ndt->getFinalNumIteration());
     
     //In fitness score, lower is better
     m_prev_pose = m_ndt->getFinalTransformation();
     
-    // Eigen::Vector3f ndt_xyz(m_prev_pose(0,3), m_prev_pose(1,3), m_prev_pose(2,3));
-    // Eigen::Vector3f gps_in_pose(in_pose(0), in_pose(1), in_pose(2));
-    // if(calDistance(gps_in_pose, ndt_xyz) > 5.0){
-        //m_prev_pose(0,3) = in_pose(0);
-        //m_prev_pose(1,3) = in_pose(1);
-        //m_prev_pose(2,3) = in_pose(2);
-    // }
+    Eigen::Vector3f ndt_xyz(m_prev_pose(0,3), m_prev_pose(1,3), m_prev_pose(2,3));
+    Eigen::Vector3f gps_in_pose(pose_in(0,3), pose_in(1,3), pose_in(2,3));
+    if(calDistance(gps_in_pose, ndt_xyz) > 1.5 && ndt_score > 0.1){
+      m_prev_pose = pose_in;
+    }
     pcl::transformPointCloud(*pc_in, *pc_out, m_prev_pose);
-    out_pose = m_prev_pose;    
+    pose_out = m_prev_pose;    
     end = clock();
 
     // for(int i=0; i<4; i++){
@@ -100,7 +106,7 @@ namespace NdtMatching{
     //printf("\nndt_time: %f", result_time);
   }
 
-  void ndtMatching::processNdtWithColor(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_out, const Eigen::Vector3f &in_pose, Eigen::Matrix4f &out_pose)
+  void ndtMatching::processNdtWithColor(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_out, const Eigen::Matrix4f &pose_in, Eigen::Matrix4f &pose_out)
   {
     clock_t start, end;
     //voxelization
@@ -152,12 +158,12 @@ namespace NdtMatching{
       pc_out->points.emplace_back(pc_out_tmp);
     }
     m_prev_pose = m_ndt->getFinalTransformation();
-    out_pose = m_prev_pose;    
+    pose_out = m_prev_pose;    
     end = clock();
 
     for(int i=0; i<4; i++){
       for(int j=0; j<4; j++){
-        printf("matrix[%d, %d]: %.4f, ", i, j, out_pose(i,j));
+        printf("matrix[%d, %d]: %.4f, ", i, j, pose_out(i,j));
       }
       printf("\n");
     }
@@ -206,7 +212,8 @@ namespace NdtMatching{
   }
   double ndtMatching::calDistance(const Eigen::Vector3f &gps_xyz, const Eigen::Vector3f &ndt_xyz)
   {
-    return (sqrt(pow(gps_xyz(0) - ndt_xyz(0), 2) + pow(gps_xyz(1) - ndt_xyz(1), 2) + pow(gps_xyz(2) - ndt_xyz(2), 2)));    
+    printf("\ndistance: %.4f\n", sqrt(pow(gps_xyz(0) - ndt_xyz(0), 2) + pow(gps_xyz(1) - ndt_xyz(1), 2)));
+    return (sqrt(pow(gps_xyz(0) - ndt_xyz(0), 2) + pow(gps_xyz(1) - ndt_xyz(1), 2)));    
   }
   
   ndtMatching::ndtMatching(void)
