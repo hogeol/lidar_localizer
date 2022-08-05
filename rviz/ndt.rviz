@@ -27,7 +27,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: PointCloud2
+    SyncSource: ""
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -58,14 +58,6 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        base_link:
-          Value: true
-        map:
-          Value: true
-        vectornav:
-          Value: false
-        velodyne:
-          Value: false
       Marker Alpha: 1
       Marker Scale: 50
       Name: TF
@@ -73,12 +65,7 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          base_link:
-            vectornav:
-              {}
-            velodyne:
-              {}
+        {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -245,42 +232,7 @@ Visualization Manager:
         Shaft Length: 8
         Shaft Radius: 1
         Value: Arrow
-      Topic: /ndt_odom
-      Unreliable: false
-      Value: true
-    - Angle Tolerance: 0.10000000149011612
-      Class: rviz/Odometry
-      Covariance:
-        Orientation:
-          Alpha: 0.5
-          Color: 255; 255; 127
-          Color Style: Unique
-          Frame: Local
-          Offset: 1
-          Scale: 1
-          Value: true
-        Position:
-          Alpha: 0.30000001192092896
-          Color: 204; 51; 204
-          Scale: 1
-          Value: true
-        Value: true
-      Enabled: true
-      Keep: 1
-      Name: Odometry
-      Position Tolerance: 0.10000000149011612
-      Queue Size: 1
-      Shape:
-        Alpha: 1
-        Axes Length: 8
-        Axes Radius: 1
-        Color: 255; 245; 0
-        Head Length: 4
-        Head Radius: 2
-        Shaft Length: 8
-        Shaft Radius: 1
-        Value: Arrow
-      Topic: /gps_odom
+      Topic: /final_odom
       Unreliable: false
       Value: true
     - Alpha: 1

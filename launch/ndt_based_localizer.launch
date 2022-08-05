@@ -1,56 +1,48 @@
 <?xml version="1.0"?>
 <launch>
   <!-- utm arguments -->
+  <arg name="gps_topic" default="/fix" />
   <arg name="utm_zone" default="52" />
   <arg name="hemisphere" default="North" />
     <!-- k-city-->
   <arg name="gps_offset_x" default="302533.174487" />
   <arg name="gps_offset_y" default="4124215.34631" />
-  <arg name="gps_offset_z" default="6.874900" />
+  <arg name="gps_offset_z" default="0.0" />
 
-  <!-- gps & imu arguments -->
-  <arg name="imu_topic" default="vectornav/IMU" />
-  <arg name="window_size" default="2" />
-  
   <!-- lidar filtering arguments -->
   <arg name="laser_topic" default="/velodyne_points" />
   <arg name="scan_line" default="32" />
-  <arg name="max_distance" default="150.0" />
-  <arg name="min_distance" default="10.0" />
+  <arg name="max_distance" default="110.0" />
+  <arg name="min_distance" default="1.30" />
   <arg name="vertical_resolution" default="0.33" />
-  <arg name="filtering_leaf_size" default="2.0" />
-    <!-- <arg name="pcd_map_name" default="dlo_map.pcd" /> -->
+  <arg name="filtering_leaf_size" default="1.30" />
   <arg name="robot_x_min" default="-2.0" />
   <arg name="robot_x_max" default="2.0" />
   <arg name="robot_y_min" default="-0.1" />
   <arg name="robot_y_max" default="0.1" />
   <arg name="robot_z_min" default="-1.0" />
   <arg name="robot_z_max" default="1.0" />
+
   <!-- ndt arguments -->
-  <!-- <arg name="init_x" default="0.0" />
-  <arg name="init_y" default="0.0" />
-  <arg name="init_z" default="0.0" /> -->
-  <arg name="init_x" default="-78.956013" />
-  <arg name="init_y" default="-514.205941" />
-  <arg name="init_z" default="0.0" />
-  <arg name="init_rotation" default="0.96" />
-  <arg name="map_resolution" default="2.0" />
-  <arg name="map_path" default="$(find lidar_localizer)/map/" />
-  <arg name="map_name" default="leaf_0.2.pcd" />
+  <arg name="pcd_map_resolution" default="1.30" />
+  <arg name="pcd_map_path" default="$(find lidar_localizer)/map/" />
+  <arg name="pcd_map_name" default="leaf_0.2.pcd" />
+    <!-- map transform matrix info if needed-->
+  <arg name="map_translation_x" default="0.0" />
+  <arg name="map_translation_y" default="0.0" />
+  <arg name="map_translation_z" default="0.0" />
+  <arg name="map_rotation_theta" default="0.0" />
+  <arg name="gps_init_pose" default="false" />
+  <arg name="odom_init_x" default="0.0" />
+  <arg name="odom_init_y" default="0.0" />
+  <arg name="odom_init_z" default="0.0" />
+  <arg name="odom_init_rotation" default="-1.2" />
     <!-- submap_select 1 is k-nearest search, 0 is radius search-->
   <arg name="submap_select" default="1" />
   <arg name="kdtree_search_radius" default="200.0" />
-  <arg name="gicp_near_points" default="400000" />
-  <arg name="gicp_max_iteration" default="1000" />
-    <!-- transform matrix info if needed-->
-  <arg name="rotation_theta" default="0.0" />
-  <!-- <arg name="translation_x" default="-78.956013" />
-  <arg name="translation_y" default="-514.205941" />
-  <arg name="translation_z" default="6.874900" /> -->
-  <arg name="translation_x" default="0.0" />
-  <arg name="translation_y" default="0.0" />
-  <arg name="translation_z" default="-6.874900" />
-
+  <arg name="ndt_near_points" default="400000" />
+  <arg name="ndt_max_iteration" default="50" />
+  <arg name="ndt_max_threads" default="10" />
 
   <!-- rviz -->
   <arg name="rviz" default="true" />
@@ -59,15 +51,12 @@
   <param name="/use_sim_time" value="true" />
   
   <!-- utm parameters-->
+  <param name="gps_topic" type="string" value="$(arg gps_topic)" />
   <param name="utm_zone" type="int" value="$(arg utm_zone)" />
   <param name="hemisphere" type="string" value="$(arg hemisphere)" />
   <param name="gps_offset_x" type="double" value="$(arg gps_offset_x)" />
   <param name="gps_offset_y" type="double" value="$(arg gps_offset_y)" />
   <param name="gps_offset_z" type="double" value="$(arg gps_offset_z)" />
-  
-  <!-- gps & imu parameters-->
-  <param name="imu_topic" type="string" value="$(arg imu_topic)" />
-  <param name="window_size" type="int" value="$(arg window_size)" />
 
   <!-- lidar filtering parameters -->
   <param name="laser_topic" type="string" value="$(arg laser_topic)" />
@@ -84,33 +73,34 @@
   <param name="robot_z_max" type="double" value="$(arg robot_z_max)" />
 
   <!-- ndt parameters -->
-  <param name="init_x" type="double" value="$(arg init_x)" />
-  <param name="init_y" type="double" value="$(arg init_y)" />
-  <param name="init_z" type="double" value="$(arg init_z)" />
-  <param name="init_rotation" type="double" value="$(arg init_rotation)" />
-  <param name="map_resolution" type="double" value="$(arg map_resolution)" />
-  <param name="map_path" type="string" value="$(arg map_path)" />
-  <param name="map_name" type="string" value="$(arg map_name)" />
+  <param name="pcd_map_resolution" type="double" value="$(arg pcd_map_resolution)" />
+  <param name="pcd_map_path" type="string" value="$(arg pcd_map_path)" />
+  <param name="pcd_map_name" type="string" value="$(arg pcd_map_name)" />
+  <param name="map_translation_x" type="double" value="$(arg map_translation_x)" />
+  <param name="map_translation_y" type="double" value="$(arg map_translation_y)" />
+  <param name="map_translation_z" type="double" value="$(arg map_translation_z)" />
+  <param name="map_rotation_theta" type="double" value="$(arg map_rotation_theta)" />
+  <param name="gps_init_pose" type="bool" value="$(arg gps_init_pose)" />
+  <param name="odom_init_x" type="double" value="$(arg odom_init_x)" />
+  <param name="odom_init_y" type="double" value="$(arg odom_init_y)" />
+  <param name="odom_init_z" type="double" value="$(arg odom_init_z)" />
+  <param name="odom_init_rotation" type="double" value="$(arg odom_init_rotation)" />
   <param name="submap_select" type="bool" value="$(arg submap_select)" />
   <param name="kdtree_search_radius" type="double" value="$(arg kdtree_search_radius)" />
-  <param name="gicp_near_points" type="int" value="$(arg gicp_near_points)" />
-  <param name="gicp_max_iteration" type="int" value="$(arg gicp_max_iteration)" />
-  <param name="rotation_theta" type="double" value="$(arg rotation_theta)" />
-  <param name="translation_x" type="double" value="$(arg translation_x)" />
-  <param name="translation_y" type="double" value="$(arg translation_y)" />
-  <param name="translation_z" type="double" value="$(arg translation_z)" />
+  <param name="ndt_near_points" type="int" value="$(arg ndt_near_points)" />
+  <param name="ndt_max_iteration" type="int" value="$(arg ndt_max_iteration)" />
+  <param name="ndt_max_threads" type="int" value="$(arg ndt_max_threads)" />
   
   <!-- node -->
-  <node pkg="lidar_localizer" type="gps_to_utm_node" name="gps_to_utm_node" output="log">
+  <node pkg="lidar_localizer" type="gps_to_utm_node" name="gps_to_utm_node" output="screen">
   </node>
   <node pkg="lidar_localizer" type="lidar_processing_node" name="lidar_processing_node" output="screen">
   </node>
-  <node pkg="lidar_localizer" type="gicp_matching_node" name="gicp_matching_node" output="screen">
-  </node>
-  <node pkg="lidar_localizer" type="gps_imu_node" name="gps_imu_node" output="log">
+  <node pkg="lidar_localizer" type="final_odometry_node" name="ndt_matching_node" output="screen">
   </node>
 
   <node pkg="map_server" name="map_server" type="map_server" args="$(find lidar_localizer)/map/global_map.yaml"/>
+  
   <node pkg="tf" type="static_transform_publisher" name="map2velodyne" args="0 0 0 0 0 0 /base_link /velodyne 10" />
   <node pkg="tf" type="static_transform_publisher" name="map2imu" args="0 0 0 0 0 0 /base_link /vectornav 10" />
 
@@ -121,8 +111,9 @@
     <param name="/trajectory_publish_rate" value="10.0" />
   </node>
 
+  <!-- rviz -->
   <group if="$(arg rviz)">
-    <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find lidar_localizer)/rviz/gicp.rviz" />
+    <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find lidar_localizer)/rviz/ndt.rviz" />
   </group>
 
 </launch>

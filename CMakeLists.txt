@@ -83,17 +83,6 @@ target_link_libraries(gps_to_utm_node
   ${GeographicLib_LIBRARIES}
 )
 
-#GPS and IMU filtering node
-add_executable(
-  gps_imu_node
-  src/gpsImu.cpp
-  src/gpsImuNode.cpp
-)
-target_link_libraries(gps_imu_node
-  ${catkin_LIBRARIES}
-  ${EIGEN3_LIBRARIES}
-)
-
 #lidar pre-filtering node
 add_executable(
 lidar_processing_node
@@ -106,30 +95,16 @@ target_link_libraries(lidar_processing_node
   ${PCL_LIBRARIES}
 )
 
-#ndt matching node
+#final odometry node
 add_executable(
-ndt_matching_node
+final_odometry_node
 src/ndtMatching.cpp
-src/ndtMatchingNode.cpp
+src/finalOdometryNode.cpp
+src/extendedKalmanFilter.cpp
 )
-target_link_libraries(ndt_matching_node
+target_link_libraries(final_odometry_node
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
   ${EIGEN3_LIBRARIES}
   pcl_omp
 )
-
-#gicp matching node
-add_executable(
-gicp_matching_node
-src/gicpMatching.cpp
-src/gicpMatchingNode.cpp
-)
-target_link_libraries(gicp_matching_node
-  ${catkin_LIBRARIES}
-  ${PCL_LIBRARIES}
-  ${EIGEN3_LIBRARIES}
-  pcl_omp
-)
-
-  

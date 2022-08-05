@@ -32,7 +32,7 @@ namespace NdtMatching{
     double m_transform_y;
     double m_transform_z;
     pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr m_kd_tree; //map
-    Eigen::Matrix4f m_prev_pose;
+    Eigen::Matrix4f m_last_pose;
     pclomp::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>::Ptr m_ndt;
   public:
     void setMapTransformInfo(const double &theta, const double &x, const double &y, const double &z);

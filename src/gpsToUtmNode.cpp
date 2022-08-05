@@ -33,9 +33,6 @@ void gpsToUtm()
   while(1){
     if(!gps_buf.empty()){
       mutex_lock.lock();
-      // ROS_INFO("Get data lagitude from GPS: [%f]", gps_buf.front()->latitude);
-      // ROS_INFO("Get data longitude from GPS: [%f]", gps_buf.front()->longitude);
-      // ROS_INFO("Get data altitude from GPS: [%f]", gps_buf.front()->altitude);
       std_msgs::Header gps_in_header = gps_buf.front()->header;
       double latitude = gps_buf.front()->latitude;
       double longitude = gps_buf.front()->longitude;
@@ -57,14 +54,6 @@ void gpsToUtm()
       local_pose.pose.orientation.y = q.y();
       local_pose.pose.orientation.z = q.z();
       utm_pub.publish(local_pose);
-      
-      // ROS_INFO("Convert to x: [%f]", local_pose.pose.position.x);
-      // ROS_INFO("Convert to y: [%f]", local_pose.pose.position.y);
-      // ROS_INFO("Convert to z: [%f]", local_pose.pose.position.z);
-      // ROS_INFO("Convert to ow: [%f]", local_pose.pose.orientation.w);
-      // ROS_INFO("Convert to ox: [%f]", local_pose.pose.orientation.x);
-      // ROS_INFO("Convert to oy: [%f]", local_pose.pose.orientation.y);
-      // ROS_INFO("Convert to oz: [%f]", local_pose.pose.orientation.z);
     }
     std::chrono::milliseconds dura(2);
     std::this_thread::sleep_for(dura);
@@ -78,18 +67,13 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   
   std::string hemisphere = "North";
+  std::string gps_topic = "fix";
   double offset_x=0;
   double offset_y=0;
   double offset_z=0;
-  int zone=52;
+  int utm_zone=52;
+  ROS_INFO("You can find utm zone at https://mangomap.com/robertyoung/maps/69585/what-utm-zone-am-i-in-#");
 
-  if(nh.getParam("utm_zone",zone)){
-    ROS_INFO("UTM coordinate in zone %d ",zone);
-  }
-  else{
-    ROS_ERROR("Error! You must specify the utm zone. Easy to find it at https://mangomap.com/robertyoung/maps/69585/what-utm-zone-am-i-in-#");
-    ros::shutdown();
-  }
 
   if(nh.getParam("hemisphere",hemisphere)){
     ROS_INFO("North hemisphere or south hemisphere? %s ",hemisphere.c_str());
@@ -101,16 +85,18 @@ int main(int argc, char **argv)
     ROS_WARN("You need to specify you are in the north or south hemisphere. Default north");
     hemisphere = "North";
   }
+
+  nh.getParam("utm_zone", utm_zone);
+  nh.getParam("gps_topic", gps_topic);
   nh.getParam("gps_offset_x", offset_x);
   nh.getParam("gps_offset_y", offset_y);
   nh.getParam("gps_offset_z", offset_z);
   
-  gpsToUtmClass.init(hemisphere, zone);
+  gpsToUtmClass.init(hemisphere, utm_zone);
   gpsToUtmClass.setGpsOffset(offset_x, offset_y, offset_z);
 
-  ros::Subscriber gps_sub = nh.subscribe("/fix",1 ,gpsCallback);
-  utm_pub = nh.advertise<geometry_msgs::PointStamped>("/utm", 1);
-  //utm_pub = nh.advertise<geometry_msgs::Pose>("/utm", 100);
+  ros::Subscriber gps_sub = nh.subscribe(gps_topic,1 ,gpsCallback);
+  utm_pub = nh.advertise<geometry_msgs::PoseStamped>("/utm", 1);
 
   std::thread gpsToUtmProcess{gpsToUtm};
 
