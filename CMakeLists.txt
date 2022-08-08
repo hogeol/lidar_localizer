@@ -95,6 +95,17 @@ target_link_libraries(lidar_processing_node
   ${PCL_LIBRARIES}
 )
 
+#imu pre-filtering node
+add_executable(
+imu_processing_node
+src/imuProcessing.cpp
+src/imuProcessingNode.cpp
+)
+target_link_libraries(imu_processing_node
+  ${catkin_LIBRARIES}
+  ${EIGEN3_LIBRARIES}
+)
+
 #final odometry node
 add_executable(
 final_odometry_node

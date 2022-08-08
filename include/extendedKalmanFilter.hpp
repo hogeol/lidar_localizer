@@ -9,12 +9,13 @@
 namespace ExtendedKalmanFilter{
   class extendedKalmanFilter{
   private:
+    int m_window_size;
     Eigen::VectorXd m_prev_state;
     
     
   public:
     void init(const int &window_size);
-      extendedKalmanFilter();
+      extendedKalmanFilter(void);
   };
 }
 

@@ -72,10 +72,8 @@ namespace NdtMatching{
     // Eigen::Vector3f ndt_xyz(m_last_pose(0,3), m_last_pose(1,3), m_last_pose(2,3));
     // Eigen::Vector3f gps_in_pose(pose_in(0,3), pose_in(1,3), pose_in(2,3));
     // if(calDistance(gps_in_pose, ndt_xyz) > 2.5 && ndt_score > 0.15){
-    //     if(m_local_count%25 == 0){
-    //       m_last_pose(0,3) = pose_in(0,3);
-    //       m_last_pose(1,3) = pose_in(1,3);
-    //       m_last_pose(2,3) = pose_in(2,3);
+    //     if(m_local_count % 25 == 0){
+    //       m_last_pose = pose_in;
     //       m_local_count = 0;
     //     }
     //     m_local_count++;
