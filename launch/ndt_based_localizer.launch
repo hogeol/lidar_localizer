@@ -16,12 +16,12 @@
   <arg name="min_distance" default="1.30" />
   <arg name="vertical_resolution" default="0.33" />
   <arg name="filtering_leaf_size" default="1.30" />
-  <arg name="robot_x_min" default="-2.0" />
-  <arg name="robot_x_max" default="2.0" />
-  <arg name="robot_y_min" default="-0.1" />
-  <arg name="robot_y_max" default="0.1" />
-  <arg name="robot_z_min" default="-1.0" />
-  <arg name="robot_z_max" default="1.0" />
+  <arg name="robot_x_min" default="-0.0" />
+  <arg name="robot_x_max" default="0.0" />
+  <arg name="robot_y_min" default="-0.0" />
+  <arg name="robot_y_max" default="0.0" />
+  <arg name="robot_z_min" default="-0.0" />
+  <arg name="robot_z_max" default="0.0" />
 
   <!-- ndt arguments -->
   <arg name="pcd_map_resolution" default="1.30" />
@@ -30,7 +30,7 @@
     <!-- map transform matrix info if needed-->
   <arg name="map_translation_x" default="0.0" />
   <arg name="map_translation_y" default="0.0" />
-  <arg name="map_translation_z" default="0.0" />
+  <arg name="map_translation_z" default="-6.8749" />
   <arg name="map_rotation_theta" default="0.0" />
   <arg name="gps_init_pose" default="false" />
   <arg name="odom_init_x" default="0.0" />

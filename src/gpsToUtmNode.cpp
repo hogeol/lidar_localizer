@@ -1,4 +1,4 @@
-//STL
+//stl
 #include <string>
 #include <queue>
 #include <thread>
@@ -19,26 +19,26 @@ ros::Publisher utm_pub;
 
 GpsToUtm::gpsToUtm gpsToUtmClass;
 std::queue<sensor_msgs::NavSatFixConstPtr> gps_buf;
-std::mutex mutex_lock;
+std::mutex mutex_control;
 
 void gpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg)
 {
-  mutex_lock.lock();
+  mutex_control.lock();
   gps_buf.push(gps_msg);
-  mutex_lock.unlock();  
+  mutex_control.unlock();  
 }
 
 void gpsToUtm()
 {
   while(1){
     if(!gps_buf.empty()){
-      mutex_lock.lock();
+      mutex_control.lock();
       std_msgs::Header gps_in_header = gps_buf.front()->header;
       double latitude = gps_buf.front()->latitude;
       double longitude = gps_buf.front()->longitude;
       double altitude = gps_buf.front()->altitude;
       gps_buf.pop();
-      mutex_lock.unlock();
+      mutex_control.unlock();
       Eigen::Vector3d utm_pose;
       gpsToUtmClass.gpsConvertToUtm(latitude, longitude, altitude, utm_pose);
         

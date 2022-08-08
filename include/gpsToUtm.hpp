@@ -1,14 +1,15 @@
 #ifndef _GPS_TO_UTM_
 #define _GPS_TO_UTM_
 
-#include <cmath>
-#include <Eigen/Core>
-#include <Eigen/Dense>
-#include <string>
 #include <GeographicLib/TransverseMercator.hpp>
 
+#include <Eigen/Core>
+#include <Eigen/Dense>
+
+#include <string>
+#include <cmath>
+
 namespace GpsToUtm{
-  //resource from wiki  Universal Transverse Mercator coordinate system. WGS 84
   struct basic{
     double bx = 0.0;//-594929.9431329881;//east
     double by = 0.0;//-4139043.529676078;//north

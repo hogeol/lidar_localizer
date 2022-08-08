@@ -1,7 +1,6 @@
 #ifndef _LIDAR_PROCESSING_
 #define _LIDAR_PROCESSING_
 
-#include "lidar.hpp"
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <pcl/filters/passthrough.h>
@@ -13,9 +12,9 @@
 #include <vector>
 #include <cmath>
 
+#include "lidar.hpp"
 
 namespace LidarProcessing{
-
   class robotDimension{
   public:   
     double m_robot_x_min;
@@ -33,7 +32,7 @@ namespace LidarProcessing{
   class lidarProcessingClass{
   private:
     double m_leaf_size;
-    Lidar::lidarClass m_lidar_info;
+    Lidar::lidar m_lidar_info;
     robotDimension m_robot_info;
     pcl::PointCloud<pcl::PointXYZI>::Ptr m_point_xyzi;
   public:

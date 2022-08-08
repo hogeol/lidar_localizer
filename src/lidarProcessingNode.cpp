@@ -1,4 +1,4 @@
-//STL
+//stl
 #include <string>
 #include <queue>
 #include <mutex>
@@ -18,29 +18,29 @@
 
 LidarProcessing::lidarProcessingClass lidar_processing;
 std::queue<sensor_msgs::PointCloud2ConstPtr> lidar_buf;
-std::mutex mutex_lock;
+std::mutex mutex_control;
 
 //publisher
 ros::Publisher filtered_lidar_pub;
 
 void laserCallback(const sensor_msgs::PointCloud2ConstPtr &laserMsg)
 {
-  mutex_lock.lock();
+  mutex_control.lock();
   lidar_buf.push(laserMsg);
-  mutex_lock.unlock();
+  mutex_control.unlock();
 }
 
 void laserProcessing()
 {
   while(1){
     if(!lidar_buf.empty()){
-      mutex_lock.lock();
+      mutex_control.lock();
       pcl::PointCloud<pcl::PointXYZI>::Ptr point_in(new pcl::PointCloud<pcl::PointXYZI>());
       pcl::PointCloud<pcl::PointXYZI>::Ptr point_out(new pcl::PointCloud<pcl::PointXYZI>());
       pcl::fromROSMsg(*lidar_buf.front(), *point_in);
       ros::Time point_in_time = lidar_buf.front()->header.stamp;
       lidar_buf.pop();
-      mutex_lock.unlock();
+      mutex_control.unlock();
       lidar_processing.featureExtraction(point_in, point_out);
       sensor_msgs::PointCloud2 point_filtered_msg;
       pcl::toROSMsg(*point_out, point_filtered_msg);

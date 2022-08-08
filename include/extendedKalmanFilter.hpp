@@ -5,8 +5,6 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
-#include <tf/tf.h>
-#include <tf_conversions/tf_eigen.h>
 
 namespace ExtendedKalmanFilter{
   class extendedKalmanFilter{
@@ -15,7 +13,7 @@ namespace ExtendedKalmanFilter{
     
     
   public:
-    void init(const int &window_size, );
+    void init(const int &window_size);
       extendedKalmanFilter();
   };
 }

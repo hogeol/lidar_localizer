@@ -1,9 +1,8 @@
 #ifndef _LIDAR_
 #define _LIDAR_
-#include <string>
 
 namespace Lidar{
-  class lidarClass{
+  class lidar{
   private:
 
   public:
@@ -16,7 +15,7 @@ namespace Lidar{
     void setMaxDis(const double &max_dis);
     void setMinDis(const double &min_dis);
     void setVerticalAngle(const double &vertical_angle);
-      lidarClass();
+      lidar();
   };
 }
 

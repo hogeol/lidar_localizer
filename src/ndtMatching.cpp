@@ -1,3 +1,4 @@
+#define _USE_MATH_DEFINES_
 #include "ndtMatching.hpp"
 
 namespace NdtMatching{

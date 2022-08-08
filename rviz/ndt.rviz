@@ -6,7 +6,9 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /Path1
+        - /Odometry1/Shape1
+        - /Odometry1/Covariance1
+        - /Odometry2/Shape1
       Splitter Ratio: 0.5
     Tree Height: 746
   - Class: rviz/Selection
@@ -27,7 +29,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: PointCloud2
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -58,6 +60,14 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
+        base_link:
+          Value: true
+        map:
+          Value: true
+        vectornav:
+          Value: true
+        velodyne:
+          Value: true
       Marker Alpha: 1
       Marker Scale: 50
       Name: TF
@@ -65,7 +75,12 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        {}
+        map:
+          base_link:
+            vectornav:
+              {}
+            velodyne:
+              {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -137,14 +152,14 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
+        Max Value: 7.155223846435547
+        Min Value: -2.696439743041992
         Value: true
       Axis: Z
       Channel Name: intensity
       Class: rviz/PointCloud2
-      Color: 255; 255; 255
-      Color Transformer: Intensity
+      Color: 0; 0; 255
+      Color Transformer: FlatColor
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
@@ -154,7 +169,7 @@ Visualization Manager:
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
-      Size (Pixels): 1
+      Size (Pixels): 3
       Size (m): 0.009999999776482582
       Style: Points
       Topic: /ndt
@@ -199,6 +214,41 @@ Visualization Manager:
       Topic: /map
       Unreliable: false
       Use Timestamp: false
+      Value: true
+    - Angle Tolerance: 0.10000000149011612
+      Class: rviz/Odometry
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.30000001192092896
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
+      Enabled: true
+      Keep: 1
+      Name: Odometry
+      Position Tolerance: 0.10000000149011612
+      Queue Size: 1
+      Shape:
+        Alpha: 1
+        Axes Length: 1
+        Axes Radius: 0.10000000149011612
+        Color: 255; 255; 255
+        Head Length: 4
+        Head Radius: 2
+        Shaft Length: 8
+        Shaft Radius: 1
+        Value: Arrow
+      Topic: /gps_odom
+      Unreliable: false
       Value: true
     - Angle Tolerance: 0.10000000149011612
       Class: rviz/Odometry
@@ -287,7 +337,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 508.9111328125
+      Distance: 145.649169921875
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -295,17 +345,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -55.83930587768555
-        Y: -251.5924072265625
-        Z: 84.4991455078125
+        X: -6.598418712615967
+        Y: -389.3060302734375
+        Z: 80.11621856689453
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.5647963285446167
       Target Frame: <Fixed Frame>
-      Yaw: 1.490395426750183
+      Yaw: 1.1503958702087402
     Saved: ~
 Window Geometry:
   Displays:

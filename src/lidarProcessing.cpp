@@ -23,6 +23,24 @@ namespace LidarProcessing{
     //remove NaN points
     std::vector<int> nan_idx;
     pcl::removeNaNFromPointCloud<pcl::PointXYZI>(*pc_in, *pc_in, nan_idx);
+
+    ////passthrough filter
+    // pcl::PointCloud<pcl::PointXYZI>::Ptr x_ptf_out(new pcl::PointCloud<pcl::PointXYZI>());
+    // pcl::PointCloud<pcl::PointXYZI>::Ptr y_ptf_out(new pcl::PointCloud<pcl::PointXYZI>());
+    // pcl::PassThrough<pcl::PointXYZI>::Ptr pass_through(new pcl::PassThrough<pcl::PointXYZI>());
+    // pass_through->setInputCloud(pc_in);
+    
+    // pass_through->setFilterFieldName("x");
+    // pass_through->setFilterLimits(m_robot_info.m_robot_x_min, m_robot_info.m_robot_x_max);
+    // pass_through->setFilterLimitsNegative(true);
+    // pass_through->filter(*x_ptf_out);
+
+    // pass_through->setInputCloud(x_ptf_out);
+    // pass_through->setFilterFieldName("y");
+    // pass_through->setFilterLimits(m_robot_info.m_robot_y_min, m_robot_info.m_robot_y_max);
+    // pass_through->setFilterLimitsNegative(true);
+    // pass_through->filter(*y_ptf_out);
+
     //downsampling
     pcl::PointCloud<pcl::PointXYZI>::Ptr down_sampling_out(new pcl::PointCloud<pcl::PointXYZI>());
     pcl::ApproximateVoxelGrid<pcl::PointXYZI>::Ptr avg_filter(new pcl::ApproximateVoxelGrid<pcl::PointXYZI>());
@@ -46,17 +64,6 @@ namespace LidarProcessing{
     // ext.setNegative(true);
     // //ext.filter(*rm_noise_out);
     // ext.filter(*pc_out);
-
-    //passthrough filter
-    // pcl::PointCloud<pcl::PointXYZI>::Ptr ptf_out(new pcl::PointCloud<pcl::PointXYZI>());
-    // pcl::PassThrough<pcl::PointXYZI>::Ptr pass_through(new pcl::PassThrough<pcl::PointXYZI>());
-    // pass_through->setInputCloud(down_sampling_out);
-    // //pass_through.setInputCloud(rm_noise_out);
-    // pass_through->setFilterFieldName("y");
-    // pass_through->setFilterLimits(m_robot_info.m_robot_y_min, m_robot_info.m_robot_y_max);
-    // pass_through->setFilterLimitsNegative(true);
-    // pass_through->filter(*ptf_out);
-    // //pass_through.filter(*pc_out);
     
     //statistical outrier removal
     int num_neighbor_points = 20;
