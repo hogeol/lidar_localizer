@@ -55,7 +55,7 @@ void gpsToUtm()
       local_pose.pose.orientation.z = q.z();
       utm_pub.publish(local_pose);
     }
-    std::chrono::milliseconds dura(2);
+    std::chrono::milliseconds dura(3);
     std::this_thread::sleep_for(dura);
   }
 }

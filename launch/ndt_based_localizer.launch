@@ -12,10 +12,10 @@
   <!-- lidar filtering arguments -->
   <arg name="laser_topic" default="/velodyne_points" />
   <arg name="scan_line" default="32" />
-  <arg name="max_distance" default="110.0" />
+  <arg name="max_distance" default="130.0" />
   <arg name="min_distance" default="0.2" />
   <arg name="vertical_resolution" default="0.33" />
-  <arg name="filtering_leaf_size" default="1.30" />
+  <arg name="filtering_leaf_size" default="1.5" />
   <arg name="robot_x_min" default="-0.0" />
   <arg name="robot_x_max" default="0.0" />
   <arg name="robot_y_min" default="-0.0" />
@@ -24,15 +24,15 @@
   <arg name="robot_z_max" default="0.0" />
 
   <!-- ndt arguments -->
-  <arg name="pcd_map_resolution" default="1.30" />
+  <arg name="pcd_map_resolution" default="1.5" />
   <arg name="pcd_map_path" default="$(find lidar_localizer)/map/" />
   <arg name="pcd_map_name" default="leaf_0.01.pcd" />
     <!-- map transform matrix info if needed-->
   <arg name="map_translation_x" default="0.0" />
   <arg name="map_translation_y" default="0.0" />
-  <arg name="map_translation_z" default="-6.8749" />
+  <arg name="map_translation_z" default="-6.874900" />
   <arg name="map_rotation_theta" default="0.0" />
-  <arg name="gps_init_pose" default="false" />
+  <arg name="user_init_pose" default="false" />
   <arg name="odom_init_x" default="0.0" />
   <arg name="odom_init_y" default="0.0" />
   <arg name="odom_init_z" default="0.0" />
@@ -44,11 +44,12 @@
   <arg name="ndt_max_iteration" default="50" />
   <arg name="ndt_max_threads" default="10" />
 
-  <!-- imu arguments-->
+  <!-- imu and utm arguments-->
   <arg name="imu_topic" default="/vectornav/IMU" />
   <arg name="imu_window_size" default="4" />
+  <arg name="utm_window_size" default="2" />
   <!-- kalman filter arguments -->
-  <arg name="ekf_window_size" default="4" />
+  <arg name="ekf_window_size" default="20" />
 
   <!-- rviz -->
   <arg name="rviz" default="true" />
@@ -86,7 +87,7 @@
   <param name="map_translation_y" type="double" value="$(arg map_translation_y)" />
   <param name="map_translation_z" type="double" value="$(arg map_translation_z)" />
   <param name="map_rotation_theta" type="double" value="$(arg map_rotation_theta)" />
-  <param name="gps_init_pose" type="bool" value="$(arg gps_init_pose)" />
+  <param name="user_init_pose" type="bool" value="$(arg user_init_pose)" />
   <param name="odom_init_x" type="double" value="$(arg odom_init_x)" />
   <param name="odom_init_y" type="double" value="$(arg odom_init_y)" />
   <param name="odom_init_z" type="double" value="$(arg odom_init_z)" />
@@ -97,8 +98,9 @@
   <param name="ndt_max_iteration" type="int" value="$(arg ndt_max_iteration)" />
   <param name="ndt_max_threads" type="int" value="$(arg ndt_max_threads)" />
 
-  <!-- imu parameters-->
+  <!-- imu and utm parameters-->
   <param name="imu_window_size" type="int" value="$(arg imu_window_size)" />
+  <param name="utm_window_size" type="int" value="$(arg utm_window_size)" />
 
   <!-- ekf parameters -->
   <param name="imu_topic" type="string" value="$(arg imu_topic)" />
@@ -109,19 +111,27 @@
   </node>
   <node pkg="lidar_localizer" type="lidar_processing_node" name="lidar_processing_node" output="screen">
   </node>
-  <node pkg="lidar_localizer" type="imu_processing_node" name="imu_processing_node" output="screen">
+  <node pkg="lidar_localizer" type="local_pose_processing_node" name="local_pose_processing_node" output="screen">
   </node>
   <node pkg="lidar_localizer" type="final_odometry_node" name="ndt_matching_node" output="screen">
   </node>
 
   <node pkg="map_server" name="map_server" type="map_server" args="$(find lidar_localizer)/map/global_map.yaml"/>
   
-  <node pkg="tf" type="static_transform_publisher" name="map2velodyne" args="0 0 0 0 0 0 /base_link /velodyne 10" />
-  <node pkg="tf" type="static_transform_publisher" name="map2imu" args="0 0 0 0 0 0 /base_link /vectornav 10" />
+  <node pkg="tf" type="static_transform_publisher" name="baselink2velodyne" args="0.0 0.0 0.0 0 0 0 /base_link /velodyne 10" />
+  <node pkg="tf" type="static_transform_publisher" name="baselink2imu" args="0 0 0 0 0 0 /base_link /vectornav 10" />
+  <node pkg="tf" type="static_transform_publisher" name="baselink2gps" args="0 0.5 0 0 0 0 /base_link /gps 10" />
 
-  <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="trajectory_server_loam" ns="odom" >
+  <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="trajectory_server_ndt" ns="ndt" >
     <param name="/target_frame_name" value="map" />
-    <param name="/source_frame_name" value="base_link" />
+    <param name="/source_frame_name" value="ndt" />
+    <param name="/trajectory_update_rate" value="10.0" />
+    <param name="/trajectory_publish_rate" value="10.0" />
+  </node>
+
+  <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="trajectory_server_gps" ns="local" >
+    <param name="/target_frame_name" value="map" />
+    <param name="/source_frame_name" value="local" />
     <param name="/trajectory_update_rate" value="10.0" />
     <param name="/trajectory_publish_rate" value="10.0" />
   </node>

@@ -97,11 +97,11 @@ target_link_libraries(lidar_processing_node
 
 #imu pre-filtering node
 add_executable(
-imu_processing_node
-src/imuProcessing.cpp
-src/imuProcessingNode.cpp
+local_pose_processing_node
+src/localPoseProcessing.cpp
+src/localPoseProcessingNode.cpp
 )
-target_link_libraries(imu_processing_node
+target_link_libraries(local_pose_processing_node
   ${catkin_LIBRARIES}
   ${EIGEN3_LIBRARIES}
 )

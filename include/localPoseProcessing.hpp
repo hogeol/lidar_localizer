@@ -19,7 +19,6 @@ namespace ImuProcessing{
     void weightPrevOrientation(const Eigen::Quaterniond &pres_orientation);
     void positionClear();
     int getImuWindowSize() const;
-    int getUtmWindowSize() const;
       imuProcessing(void);
   };
 }

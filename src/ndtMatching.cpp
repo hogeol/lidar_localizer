@@ -45,7 +45,7 @@ namespace NdtMatching{
     m_kd_tree->setInputCloud(mp_pcd_map);
     m_ndt->setTransformationEpsilon(0.01);
     m_ndt->setStepSize(0.1);
-    m_ndt->setResolution(1.35);
+    m_ndt->setResolution(2.85);
     //m_ndt->setNumThreads(omp_get_max_threads());
     m_ndt->setNumThreads(ndt_threads);
     m_ndt->setMaximumIterations(max_iter);
@@ -69,16 +69,16 @@ namespace NdtMatching{
     //In fitness score, lower is better
     m_last_pose = m_ndt->getFinalTransformation();
 
-    // Eigen::Vector3f ndt_xyz(m_last_pose(0,3), m_last_pose(1,3), m_last_pose(2,3));
-    // Eigen::Vector3f gps_in_pose(pose_in(0,3), pose_in(1,3), pose_in(2,3));
-    // if(calDistance(gps_in_pose, ndt_xyz) > 2.5 && ndt_score > 0.15){
-    //     if(m_local_count % 25 == 0){
-    //       m_last_pose = pose_in;
-    //       m_local_count = 0;
-    //     }
-    //     m_local_count++;
-    //     printf("\nlocal_count: %d\n", m_local_count);
-    // }
+    Eigen::Vector3f ndt_xyz(m_last_pose(0,3), m_last_pose(1,3), m_last_pose(2,3));
+    Eigen::Vector3f gps_in_pose(pose_in(0,3), pose_in(1,3), pose_in(2,3));
+    if(calDistance(gps_in_pose, ndt_xyz) > 0.4 && ndt_score > 0.2){
+        if(m_local_count % 50 == 0){
+          m_last_pose = pose_in;
+          m_local_count = 0;
+        }
+        m_local_count++;
+        //printf("\nlocal_count: %d\n", m_local_count);
+    }
     pcl::transformPointCloud(*pc_in, *pc_out, m_last_pose);
     pose_out = m_last_pose;    
     end = clock();
@@ -205,7 +205,7 @@ namespace NdtMatching{
   }
   double ndtMatching::calDistance(const Eigen::Vector3f &gps_xyz, const Eigen::Vector3f &ndt_xyz)
   {
-    printf("\ndistance: %.4f\n", sqrt(pow(gps_xyz(0) - ndt_xyz(0), 2) + pow(gps_xyz(1) - ndt_xyz(1), 2)));
+    //printf("\ndistance: %.4f\n", sqrt(pow(gps_xyz(0) - ndt_xyz(0), 2) + pow(gps_xyz(1) - ndt_xyz(1), 2)));
     return (sqrt(pow(gps_xyz(0) - ndt_xyz(0), 2) + pow(gps_xyz(1) - ndt_xyz(1), 2)));    
   }
   

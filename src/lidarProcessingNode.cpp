@@ -48,7 +48,7 @@ void laserProcessing()
       point_filtered_msg.header.stamp = point_in_time;
       filtered_lidar_pub.publish(point_filtered_msg);
     }
-    std::chrono::milliseconds dura(2);
+    std::chrono::milliseconds dura(3);
     std::this_thread::sleep_for(dura);
   }
 }

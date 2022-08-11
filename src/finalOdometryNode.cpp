@@ -10,7 +10,6 @@
 //ros
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/Imu.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/PoseStamped.h>
 //tf
@@ -27,14 +26,13 @@
 ros::Publisher map_pub;
 ros::Publisher ndt_pub;
 ros::Publisher odom_pub;
-ros::Publisher gps_pub;
+ros::Publisher local_pub;
 
 NdtMatching::ndtMatching ndt_matching;
 ExtendedKalmanFilter::extendedKalmanFilter extended_kalman_filter;
 
 std::queue<sensor_msgs::PointCloud2ConstPtr> lidar_buf;
-std::queue<geometry_msgs::PoseStampedConstPtr> filtered_imu_buf;
-std::queue<geometry_msgs::PoseStampedConstPtr> utm_buf;
+std::queue<geometry_msgs::PoseStampedConstPtr> filtered_pose_buf;
 
 std::mutex mutex_control;
 
@@ -48,29 +46,24 @@ void lidarHandler(const sensor_msgs::PointCloud2ConstPtr &filtered_msg)
   if(lidar_buf.size() > 1){
     lidar_buf.pop();
   }
+  //printf("\nlidar: %d\n", lidar_buf.size());
   mutex_control.unlock();
 }
-void imuHandler(const geometry_msgs::PoseStampedConstPtr &imu_msg)
+void poseCallback(const geometry_msgs::PoseStampedConstPtr &pose_msg)
 {
   mutex_control.lock();
-  filtered_imu_buf.push(imu_msg);
-  if(filtered_imu_buf.size() > 1){
-    filtered_imu_buf.pop();
+  filtered_pose_buf.push(pose_msg);
+  if(filtered_pose_buf.size() > 1){
+    filtered_pose_buf.pop();
   }
-  mutex_control.unlock();
-}
-void utmCallback(const geometry_msgs::PoseStampedConstPtr &utm_msg)
-{
-  mutex_control.lock();
-  utm_buf.push(utm_msg);
-  //printf("\nutm: %d", utm_buf.size());
+  //printf("\nimu: %d\n", filtered_pose_buf.size());
   mutex_control.unlock();
 }
 
 void finalOdometry()
 {
   while(1){
-    if(!lidar_buf.empty() && !utm_buf.empty() && !filtered_imu_buf.empty()){
+    if(!lidar_buf.empty() && !filtered_pose_buf.empty()){
       //point ros to pointcloud
       mutex_control.lock();
       pcl::PointCloud<pcl::PointXYZI>::Ptr point_in(new pcl::PointCloud<pcl::PointXYZI>());
@@ -78,81 +71,84 @@ void finalOdometry()
       //lidar ros to pointcloud
       pcl::fromROSMsg(*lidar_buf.front(), *point_in);
       ros::Time point_in_time = lidar_buf.front()->header.stamp;
-      ros::Time gps_in_time = utm_buf.back()->header.stamp;
-      Eigen::Matrix4d gps_in_pose = Eigen::Matrix4d::Identity();
+      Eigen::Matrix4d nav_pose = Eigen::Matrix4d::Identity();
+      Eigen::Quaterniond local_orientation = Eigen::Quaterniond(filtered_pose_buf.front()->pose.orientation.w, filtered_pose_buf.front()->pose.orientation.x, filtered_pose_buf.front()->pose.orientation.y, filtered_pose_buf.front()->pose.orientation.z);
+      nav_pose.block<3,3>(0,0) = local_orientation.toRotationMatrix();
+      nav_pose(0,3) = filtered_pose_buf.front()->pose.position.x;
+      nav_pose(1,3) = filtered_pose_buf.front()->pose.position.y;
+      nav_pose(2,3) = filtered_pose_buf.front()->pose.position.z;
       if(is_init == false){
-        gps_in_pose.block<3,3>(0,0) = Eigen::Quaterniond(filtered_imu_buf.back()->pose.orientation.w, filtered_imu_buf.back()->pose.orientation.x, filtered_imu_buf.back()->pose.orientation.y, filtered_imu_buf.back()->pose.orientation.z).toRotationMatrix();
-        gps_in_pose(0,3) = utm_buf.front()->pose.position.x;
-        gps_in_pose(1,3) = utm_buf.front()->pose.position.y;
-        gps_in_pose(2,3) = utm_buf.front()->pose.position.z;
         tf::Matrix3x3 tf_rot_matrix;
-        tf::matrixEigenToTF(gps_in_pose.block<3,3>(0,0), tf_rot_matrix);
+        tf::matrixEigenToTF(nav_pose.block<3,3>(0,0), tf_rot_matrix);
         double roll = 0.0, pitch = 0.0, yaw = 0.0;
         tf_rot_matrix.getRPY(roll, pitch, yaw);
-        ndt_matching.setInitPosition(gps_in_pose(0,3), gps_in_pose(1,3), gps_in_pose(2,3), yaw);
+        ndt_matching.setInitPosition(nav_pose(0,3), nav_pose(1,3), nav_pose(2,3), yaw);
         is_init = true;
-        filtered_imu_buf.pop();
-        utm_buf.pop();
+        filtered_pose_buf.pop();
         lidar_buf.pop();
         mutex_control.unlock();
       }
       else{
-          gps_in_pose.block<3,3>(0,0) = Eigen::Quaterniond(filtered_imu_buf.back()->pose.orientation.w, filtered_imu_buf.back()->pose.orientation.x, filtered_imu_buf.back()->pose.orientation.y, filtered_imu_buf.back()->pose.orientation.z).toRotationMatrix();
-          gps_in_pose(0,3) = utm_buf.back()->pose.position.x;
-          gps_in_pose(1,3) = utm_buf.back()->pose.position.y;
-          gps_in_pose(2,3) = utm_buf.back()->pose.position.z;
-          filtered_imu_buf.pop();
-          utm_buf.pop();
+          filtered_pose_buf.pop();
           lidar_buf.pop();
           mutex_control.unlock();  
-        }
+      }
       
       //after ndt matching
+      Eigen::Matrix4f ndt_pose = Eigen::Matrix4f::Identity();
       Eigen::Matrix4f result_pose = Eigen::Matrix4f::Identity();
-      ndt_matching.processNdt(point_in, point_out, gps_in_pose.cast<float>(), result_pose);
+      ndt_matching.processNdt(point_in, point_out, nav_pose.cast<float>(), ndt_pose);
       odom_frame++;
-      Eigen::Quaternionf q(result_pose.block<3,3>(0,0));
-      q.normalize();
+      extended_kalman_filter.exponentialWeight(ndt_pose, result_pose);
+      Eigen::Quaterniond result_orientation(result_pose.block<3,3>(0,0).cast<double>());
+      result_orientation.normalize();
 
       sensor_msgs::PointCloud2 ndt_msg;
       pcl::toROSMsg(*point_out, ndt_msg);
       ndt_msg.header.stamp = point_in_time;
       ndt_msg.header.frame_id = "map";
       ndt_pub.publish(ndt_msg);
-      
+
       static tf::TransformBroadcaster br;
       tf::Transform transform;
       transform.setOrigin(tf::Vector3(result_pose(0,3), result_pose(1,3), result_pose(2,3)));
-      tf::Quaternion q_tf(q.x(), q.y(), q.z(), q.w());
+      tf::Quaternion q_tf(result_orientation.x(), result_orientation.y(), result_orientation.z(), result_orientation.w());
       transform.setRotation(q_tf);
-      br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "map", "base_link"));
+      br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "map", "ndt"));
+
+      static tf::TransformBroadcaster gps_br;
+      tf::Transform gps_transform;
+      gps_transform.setOrigin(tf::Vector3(nav_pose(0,3), nav_pose(1,3), result_pose(2,3)));
+      tf::Quaternion gps_q_tf(local_orientation.x(), local_orientation.y(), local_orientation.z(), local_orientation.w());
+      gps_transform.setRotation(q_tf);
+      gps_br.sendTransform(tf::StampedTransform(gps_transform, ros::Time::now(), "map", "local"));
 
       nav_msgs::Odometry odom_msg;
       odom_msg.header.frame_id = "map";
-      odom_msg.child_frame_id = "base_link";
+      odom_msg.child_frame_id = "ndt";
       odom_msg.header.stamp = point_in_time;
       odom_msg.pose.pose.position.x = result_pose(0,3);
       odom_msg.pose.pose.position.y = result_pose(1,3);
       odom_msg.pose.pose.position.z = result_pose(2,3);
-      odom_msg.pose.pose.orientation.w = q.w();
-      odom_msg.pose.pose.orientation.x = q.x();
-      odom_msg.pose.pose.orientation.y = q.y();
-      odom_msg.pose.pose.orientation.z = q.z();
+      odom_msg.pose.pose.orientation.w = result_orientation.w();
+      odom_msg.pose.pose.orientation.x = result_orientation.x();
+      odom_msg.pose.pose.orientation.y = result_orientation.y();
+      odom_msg.pose.pose.orientation.z = result_orientation.z();
       odom_pub.publish(odom_msg);
+            
+      nav_msgs::Odometry local_msg;
+      local_msg.header.frame_id = "map";
+      local_msg.child_frame_id = "local";
+      local_msg.header.stamp = point_in_time;
+      local_msg.pose.pose.position.x = nav_pose(0,3);
+      local_msg.pose.pose.position.y = nav_pose(1,3);
+      local_msg.pose.pose.position.z = nav_pose(2,3);
+      local_msg.pose.pose.orientation.w = local_orientation.w();
+      local_msg.pose.pose.orientation.x = local_orientation.x();
+      local_msg.pose.pose.orientation.y = local_orientation.y();
+      local_msg.pose.pose.orientation.z = local_orientation.z();
+      local_pub.publish(local_msg);
 
-      Eigen::Quaterniond gps_q(gps_in_pose.block<3,3>(0,0));
-      nav_msgs::Odometry gps_odom_msg;
-      gps_odom_msg.header.frame_id = "map";
-      gps_odom_msg.child_frame_id = "base_link";
-      gps_odom_msg.header.stamp = gps_in_time;
-      gps_odom_msg.pose.pose.position.x = gps_in_pose(0,3);
-      gps_odom_msg.pose.pose.position.y = gps_in_pose(1,3);
-      gps_odom_msg.pose.pose.position.z = 0.0;
-      gps_odom_msg.pose.pose.orientation.w = gps_q.w();
-      gps_odom_msg.pose.pose.orientation.x = gps_q.x();
-      gps_odom_msg.pose.pose.orientation.y = gps_q.y();
-      gps_odom_msg.pose.pose.orientation.z = gps_q.z();
-      gps_pub.publish(gps_odom_msg);
       //map publish
       if(odom_frame%30 == 0){
         sensor_msgs::PointCloud2 map_msg;
@@ -163,7 +159,7 @@ void finalOdometry()
         odom_frame = 0;
       }
     }
-    std::chrono::milliseconds dura(2);
+    std::chrono::milliseconds dura(3);
     std::this_thread::sleep_for(dura);
   }
 }
@@ -193,7 +189,7 @@ int main(int argc, char** argv)
   std::string pcd_map_name = "map.pcd";
 
   //Extended KalmanFilter
-  int ekf_window_size=4;
+  int ekf_window_size=100;
 
   nh.getParam("pcd_map_resolution", pcd_map_resolution);
   nh.getParam("pcd_map_path", pcd_map_path);
@@ -202,7 +198,7 @@ int main(int argc, char** argv)
   nh.getParam("map_translation_y", map_translation_y);
   nh.getParam("map_translation_z", map_translation_z);
   nh.getParam("map_rotation_theta", map_rotation_theta);
-  nh.getParam("gps_init_pose", is_init);
+  nh.getParam("user_init_pose", is_init);
   nh.getParam("odom_init_x", odom_init_x);
   nh.getParam("odom_init_y", odom_init_y);
   nh.getParam("odom_init_z", odom_init_z);
@@ -221,17 +217,16 @@ int main(int argc, char** argv)
     ndt_matching.setInitPosition(odom_init_x, odom_init_y, odom_init_z, odom_init_rotation);
   }
   ndt_matching.init(pcd_map_resolution, pcd_map_path, pcd_map_name, submap_select, search_radius, ndt_near_points, ndt_max_iteration, ndt_max_threads);
-
   extended_kalman_filter.init(ekf_window_size);
 
+
   ros::Subscriber filtered_lidar_sub = nh.subscribe<sensor_msgs::PointCloud2>("/filtered_point", 1, lidarHandler);
-  ros::Subscriber imu_sub = nh.subscribe<geometry_msgs::PoseStamped>("/filtered_imu", 1, imuHandler);
-  ros::Subscriber utm_sum = nh.subscribe<geometry_msgs::PoseStamped>("/utm", 1, utmCallback);
+  ros::Subscriber pose_sub = nh.subscribe<geometry_msgs::PoseStamped>("/filtered_pose", 1, poseCallback);
 
   map_pub = nh.advertise<sensor_msgs::PointCloud2>("/pcd_map", 1);
   ndt_pub = nh.advertise<sensor_msgs::PointCloud2>("/ndt", 1);
   odom_pub = nh.advertise<nav_msgs::Odometry>("/final_odom", 1);
-  gps_pub = nh.advertise<nav_msgs::Odometry>("/gps_odom", 1);
+  local_pub = nh.advertise<nav_msgs::Odometry>("/local_odom", 1);
 
   std::thread finalOdometryProcess{finalOdometry};
 
