@@ -43,9 +43,9 @@ namespace NdtMatching{
     //transform if UTM coordinate is not provided in mapping (lotation is only z-axis based)
     pcdMapTransform(map_after_downsampling_pcd);
     m_kd_tree->setInputCloud(mp_pcd_map);
-    m_ndt->setTransformationEpsilon(0.01);
+    m_ndt->setTransformationEpsilon(0.001);
     m_ndt->setStepSize(0.1);
-    m_ndt->setResolution(2.85);
+    m_ndt->setResolution(2.75);
     //m_ndt->setNumThreads(omp_get_max_threads());
     m_ndt->setNumThreads(ndt_threads);
     m_ndt->setMaximumIterations(max_iter);
@@ -71,9 +71,11 @@ namespace NdtMatching{
 
     Eigen::Vector3f ndt_xyz(m_last_pose(0,3), m_last_pose(1,3), m_last_pose(2,3));
     Eigen::Vector3f gps_in_pose(pose_in(0,3), pose_in(1,3), pose_in(2,3));
-    if(calDistance(gps_in_pose, ndt_xyz) > 0.4 && ndt_score > 0.2){
+    if(calDistance(gps_in_pose, ndt_xyz) > 0.5 && ndt_score > 0.15){
         if(m_local_count % 50 == 0){
-          m_last_pose = pose_in;
+          m_last_pose(0,3) = pose_in(0,3);
+          m_last_pose(1,3) = pose_in(1,3);
+          m_last_pose(2,3) = pose_in(2,3);
           m_local_count = 0;
         }
         m_local_count++;
