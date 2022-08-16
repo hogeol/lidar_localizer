@@ -88,7 +88,7 @@ void finalOdometry()
           mutex_control.unlock();  
       }
       
-      //after ndt matching
+      //pose after ndt
       Eigen::Matrix4f ndt_pose = Eigen::Matrix4f::Identity();
       Eigen::Matrix4f result_pose = Eigen::Matrix4f::Identity();
       ndt_matching.processNdt(point_in, point_out, nav_pose.cast<float>(), ndt_pose);
@@ -97,12 +97,14 @@ void finalOdometry()
       Eigen::Quaterniond result_orientation(result_pose.block<3,3>(0,0).cast<double>());
       result_orientation.normalize();
 
+      //pointcloud after ndt
       sensor_msgs::PointCloud2 ndt_msg;
       pcl::toROSMsg(*point_out, ndt_msg);
       ndt_msg.header.stamp = point_in_time;
       ndt_msg.header.frame_id = "map";
       ndt_pub.publish(ndt_msg);
 
+      //ndt pose transform
       static tf2_ros::TransformBroadcaster tf2_ndt_br;
       geometry_msgs::TransformStamped transformStamped_ndt;
       transformStamped_ndt.header.stamp = ros::Time::now();
@@ -117,6 +119,7 @@ void finalOdometry()
       transformStamped_ndt.transform.rotation.z = result_orientation.z();
       tf2_ndt_br.sendTransform(transformStamped_ndt);
       
+      //gps pose transform
       static tf2_ros::TransformBroadcaster tf2_gps_br;
       geometry_msgs::TransformStamped transformStamped_gps;
       transformStamped_gps.header.stamp = ros::Time::now();
@@ -131,6 +134,7 @@ void finalOdometry()
       transformStamped_gps.transform.rotation.z = local_orientation.z();
       tf2_gps_br.sendTransform(transformStamped_gps);
 
+      //ndt odometry
       nav_msgs::Odometry odom_msg;
       odom_msg.header.frame_id = "map";
       odom_msg.child_frame_id = "ndt";
@@ -144,6 +148,7 @@ void finalOdometry()
       odom_msg.pose.pose.orientation.z = result_orientation.z();
       odom_pub.publish(odom_msg);
             
+      //gps odometry
       nav_msgs::Odometry local_msg;
       local_msg.header.frame_id = "map";
       local_msg.child_frame_id = "local";
