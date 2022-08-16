@@ -39,7 +39,6 @@ namespace ExtendedKalmanFilter{
     else{
       pose_out = pres_pose;
     }
-    
   }
 
   void extendedKalmanFilter::sensorTFCorrection()

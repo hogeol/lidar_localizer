@@ -49,7 +49,7 @@
   <arg name="imu_window_size" default="4" />
   <arg name="utm_window_size" default="2" />
   <!-- kalman filter arguments -->
-  <arg name="ekf_window_size" default="0" />
+  <arg name="ekf_window_size" default="10" />
   <arg name="sensor_diff_x" default="0.5" />
   <arg name="sensor_diff_y" default="0.0" />
   <arg name="sensor_diff_z" default="0.0" />
@@ -108,9 +108,9 @@
 
   <!-- ekf parameters -->
   <param name="ekf_window_size" type="int" value="$(arg ekf_window_size)" />
-  <param name="sensor_diff_x" type="double" value="$(arg sensor_diff)" />
-  <param name="sensor_diff_y" type="double" value="$(arg sensor_diff)" />
-  <param name="sensor_diff_z" type="double" value="$(arg sensor_diff)" />
+  <param name="sensor_diff_x" type="double" value="$(arg sensor_diff_x)" />
+  <param name="sensor_diff_y" type="double" value="$(arg sensor_diff_y)" />
+  <param name="sensor_diff_z" type="double" value="$(arg sensor_diff_z)" />
   
   <!-- node -->
   <node pkg="lidar_localizer" type="gps_to_utm_node" name="gps_to_utm_node" output="screen">
@@ -127,14 +127,13 @@
   
 
   <!-- TF -->
-  <node pkg="tf" type="static_transform_publisher" name="baselink2velodyne" args="-0.2 0.0 0.0 0 0 0 /local /velodyne 10" />
-  <node pkg="tf" type="static_transform_publisher" name="baselink2imu" args="0 0 0 0 0 0 /base_link /vectornav 10" />
-  <node pkg="tf" type="static_transform_publisher" name="baselink2gps" args="-0.5 0 0 0 0 0 /base_link /local 10" />
+  <node pkg="tf" type="static_transform_publisher" name="baselink2velodyne" args="0.0 0.0 0.0 0 0 0 /ndt /velodyne 10" />
+  <node pkg="tf" type="static_transform_publisher" name="baselink2imu" args="0.2 0 0 0 0 0 /ndt /vectornav 10" />
 
   <!-- ndt trajectory for rviz-->
   <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="trajectory_server_ndt" ns="ndt" >
     <param name="/target_frame_name" value="map" />
-    <param name="/source_frame_name" value="base_link" />
+    <param name="/source_frame_name" value="ndt" />
     <param name="/trajectory_update_rate" value="10.0" />
     <param name="/trajectory_publish_rate" value="10.0" />
   </node>

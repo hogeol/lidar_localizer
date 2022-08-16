@@ -13,10 +13,10 @@
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/PoseStamped.h>
 //tf
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <tf/tf.h>
 #include <tf_conversions/tf_eigen.h>
-#include <tf/transform_datatypes.h>
-#include <tf/transform_broadcaster.h>
 
 //local lib
 #include "ndtMatching.hpp"
@@ -103,23 +103,37 @@ void finalOdometry()
       ndt_msg.header.frame_id = "map";
       ndt_pub.publish(ndt_msg);
 
-      static tf::TransformBroadcaster br;
-      tf::Transform transform;
-      transform.setOrigin(tf::Vector3(result_pose(0,3), result_pose(1,3), 0.0));
-      tf::Quaternion q_tf(result_orientation.x(), result_orientation.y(), result_orientation.z(), result_orientation.w());
-      transform.setRotation(q_tf);
-      br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "map", "base_link"));
-
-      static tf::TransformBroadcaster gps_br;
-      tf::Transform gps_transform;
-      gps_transform.setOrigin(tf::Vector3(nav_pose(0,3), nav_pose(1,3), 0.0));
-      tf::Quaternion gps_q_tf(local_orientation.x(), local_orientation.y(), local_orientation.z(), local_orientation.w());
-      gps_transform.setRotation(q_tf);
-      gps_br.sendTransform(tf::StampedTransform(gps_transform, ros::Time::now(), "map", "local"));
+      static tf2_ros::TransformBroadcaster tf2_ndt_br;
+      geometry_msgs::TransformStamped transformStamped_ndt;
+      transformStamped_ndt.header.stamp = ros::Time::now();
+      transformStamped_ndt.header.frame_id = "map";
+      transformStamped_ndt.child_frame_id = "ndt";
+      transformStamped_ndt.transform.translation.x = result_pose(0,3);
+      transformStamped_ndt.transform.translation.y = result_pose(1,3);
+      transformStamped_ndt.transform.translation.z = 0.0;
+      transformStamped_ndt.transform.rotation.w = result_orientation.w();
+      transformStamped_ndt.transform.rotation.x = result_orientation.x();
+      transformStamped_ndt.transform.rotation.y = result_orientation.y();
+      transformStamped_ndt.transform.rotation.z = result_orientation.z();
+      tf2_ndt_br.sendTransform(transformStamped_ndt);
+      
+      static tf2_ros::TransformBroadcaster tf2_gps_br;
+      geometry_msgs::TransformStamped transformStamped_gps;
+      transformStamped_gps.header.stamp = ros::Time::now();
+      transformStamped_gps.header.frame_id = "map";
+      transformStamped_gps.child_frame_id = "local";
+      transformStamped_gps.transform.translation.x = nav_pose(0,3);
+      transformStamped_gps.transform.translation.y = nav_pose(1,3);
+      transformStamped_gps.transform.translation.z = 0.0;
+      transformStamped_gps.transform.rotation.w = local_orientation.w();
+      transformStamped_gps.transform.rotation.x = local_orientation.x();
+      transformStamped_gps.transform.rotation.y = local_orientation.y();
+      transformStamped_gps.transform.rotation.z = local_orientation.z();
+      tf2_gps_br.sendTransform(transformStamped_gps);
 
       nav_msgs::Odometry odom_msg;
       odom_msg.header.frame_id = "map";
-      odom_msg.child_frame_id = "base_link";
+      odom_msg.child_frame_id = "ndt";
       odom_msg.header.stamp = point_in_time;
       odom_msg.pose.pose.position.x = result_pose(0,3);
       odom_msg.pose.pose.position.y = result_pose(1,3);
