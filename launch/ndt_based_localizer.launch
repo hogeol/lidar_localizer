@@ -26,7 +26,7 @@
   <!-- ndt arguments -->
   <arg name="pcd_map_resolution" default="1.5" />
   <arg name="pcd_map_path" default="$(find lidar_localizer)/map/" />
-  <arg name="pcd_map_name" default="leaf_0.01.pcd" />
+  <arg name="pcd_map_name" default="leaf_0.0001.pcd" />
     <!-- map transform matrix info if needed-->
   <arg name="map_translation_x" default="0.6" />
   <arg name="map_translation_y" default="0.0" />

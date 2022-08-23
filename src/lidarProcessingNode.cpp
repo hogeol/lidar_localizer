@@ -14,19 +14,19 @@
 //local lib
 #include "lidarProcessing.hpp"
 
-//subscriber
-
-LidarProcessing::lidarProcessingClass lidar_processing;
-std::queue<sensor_msgs::PointCloud2ConstPtr> lidar_buf;
-std::mutex mutex_control;
-
 //publisher
 ros::Publisher filtered_lidar_pub;
 
-void laserCallback(const sensor_msgs::PointCloud2ConstPtr &laserMsg)
+std::queue<sensor_msgs::PointCloud2ConstPtr> lidar_buf;
+
+std::mutex mutex_control;
+
+LidarProcessing::lidarProcessingClass lidar_processing;
+
+void laserCallback(const sensor_msgs::PointCloud2ConstPtr &laser_msg)
 {
   mutex_control.lock();
-  lidar_buf.push(laserMsg);
+  lidar_buf.push(laser_msg);
   mutex_control.unlock();
 }
 

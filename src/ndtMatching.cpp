@@ -20,6 +20,7 @@ namespace NdtMatching{
 
   void ndtMatching::init(const double &map_resolution, const std::string &map_path, const std::string &map_name, const bool &submap_select, const double &search_radius, const int & near_points, const int &max_iter, const int &ndt_threads)
   {
+    mp_pose_inited = false;
     m_local_count = 0;
     m_map_resolution = map_resolution;
     m_submap_select = submap_select;
@@ -77,9 +78,13 @@ namespace NdtMatching{
           m_last_pose(1,3) = pose_in(1,3);
           m_last_pose(2,3) = pose_in(2,3);
           m_local_count = 0;
+          mp_pose_inited = false;
         }
         m_local_count++;
         //printf("\nlocal_count: %d\n", m_local_count);
+    }
+    else if(ndt_score < 0.1 && mp_pose_inited == false){
+      mp_pose_inited = true;
     }
     pcl::transformPointCloud(*pc_in, *pc_out, m_last_pose);
     pose_out = m_last_pose;    

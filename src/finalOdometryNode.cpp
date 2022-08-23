@@ -10,8 +10,7 @@
 //ros
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <nav_msgs/Odometry.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 //tf
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
@@ -20,21 +19,19 @@
 
 //local lib
 #include "ndtMatching.hpp"
-#include "extendedKalmanFilter.hpp"
 
 //publisher
 ros::Publisher map_pub;
-ros::Publisher ndt_pub;
-ros::Publisher odom_pub;
-ros::Publisher local_pub;
-
-NdtMatching::ndtMatching ndt_matching;
-ExtendedKalmanFilter::extendedKalmanFilter extended_kalman_filter;
+ros::Publisher ndt_pc_pub;
+ros::Publisher ndt_pose_pub;
+ros::Publisher gps_pose_pub;
 
 std::queue<sensor_msgs::PointCloud2ConstPtr> lidar_buf;
-std::queue<geometry_msgs::PoseStampedConstPtr> filtered_pose_buf;
+std::queue<geometry_msgs::PoseWithCovarianceStampedConstPtr> filtered_pose_buf;
 
 std::mutex mutex_control;
+
+NdtMatching::ndtMatching ndt_matching;
 
 bool is_init;
 int odom_frame = 0;
@@ -46,7 +43,8 @@ void lidarHandler(const sensor_msgs::PointCloud2ConstPtr &filtered_msg)
   //printf("\nlidar: %d\n", lidar_buf.size());
   mutex_control.unlock();
 }
-void poseCallback(const geometry_msgs::PoseStampedConstPtr &pose_msg)
+
+void poseCallback(const geometry_msgs::PoseWithCovarianceStampedConstPtr &pose_msg)
 {
   mutex_control.lock();
   filtered_pose_buf.push(pose_msg);
@@ -66,11 +64,11 @@ void finalOdometry()
       pcl::fromROSMsg(*lidar_buf.back(), *point_in);
       ros::Time point_in_time = lidar_buf.back()->header.stamp;
       Eigen::Matrix4d nav_pose = Eigen::Matrix4d::Identity();
-      Eigen::Quaterniond local_orientation = Eigen::Quaterniond(filtered_pose_buf.back()->pose.orientation.w, filtered_pose_buf.back()->pose.orientation.x, filtered_pose_buf.back()->pose.orientation.y, filtered_pose_buf.back()->pose.orientation.z);
+      Eigen::Quaterniond local_orientation = Eigen::Quaterniond(filtered_pose_buf.back()->pose.pose.orientation.w, filtered_pose_buf.back()->pose.pose.orientation.x, filtered_pose_buf.back()->pose.pose.orientation.y, filtered_pose_buf.back()->pose.pose.orientation.z);
       nav_pose.block<3,3>(0,0) = local_orientation.toRotationMatrix();
-      nav_pose(0,3) = filtered_pose_buf.back()->pose.position.x;
-      nav_pose(1,3) = filtered_pose_buf.back()->pose.position.y;
-      nav_pose(2,3) = filtered_pose_buf.back()->pose.position.z;
+      nav_pose(0,3) = filtered_pose_buf.back()->pose.pose.position.x;
+      nav_pose(1,3) = filtered_pose_buf.back()->pose.pose.position.y;
+      nav_pose(2,3) = filtered_pose_buf.back()->pose.pose.position.z;
       if(is_init == false){
         tf::Matrix3x3 tf_rot_matrix;
         tf::matrixEigenToTF(nav_pose.block<3,3>(0,0), tf_rot_matrix);
@@ -90,35 +88,59 @@ void finalOdometry()
       
       //pose after ndt
       Eigen::Matrix4f ndt_pose = Eigen::Matrix4f::Identity();
-      Eigen::Matrix4f result_pose = Eigen::Matrix4f::Identity();
       ndt_matching.processNdt(point_in, point_out, nav_pose.cast<float>(), ndt_pose);
       odom_frame++;
-      extended_kalman_filter.exponentialWeight(ndt_pose, result_pose);
-      Eigen::Quaterniond result_orientation(result_pose.block<3,3>(0,0).cast<double>());
+      Eigen::Quaterniond result_orientation(ndt_pose.block<3,3>(0,0).cast<double>());
       result_orientation.normalize();
 
       //pointcloud after ndt
-      sensor_msgs::PointCloud2 ndt_msg;
-      pcl::toROSMsg(*point_out, ndt_msg);
-      ndt_msg.header.stamp = point_in_time;
-      ndt_msg.header.frame_id = "map";
-      ndt_pub.publish(ndt_msg);
-
+      sensor_msgs::PointCloud2 ndt_pc_msg;
+      pcl::toROSMsg(*point_out, ndt_pc_msg);
+      ndt_pc_msg.header.stamp = point_in_time;
+      ndt_pc_msg.header.frame_id = "map";
+      ndt_pc_pub.publish(ndt_pc_msg);
+      //ndt odometry
+      if(ndt_matching.mp_pose_inited == true){
+        geometry_msgs::PoseWithCovarianceStamped ndt_pose_msg;
+        ndt_pose_msg.header.frame_id = "map";
+        ndt_pose_msg.header.stamp = point_in_time;
+        ndt_pose_msg.pose.pose.position.x = ndt_pose(0,3);
+        ndt_pose_msg.pose.pose.position.y = ndt_pose(1,3);
+        ndt_pose_msg.pose.pose.position.z = ndt_pose(2,3);
+        ndt_pose_msg.pose.pose.orientation.w = result_orientation.w();
+        ndt_pose_msg.pose.pose.orientation.x = result_orientation.x();
+        ndt_pose_msg.pose.pose.orientation.y = result_orientation.y();
+        ndt_pose_msg.pose.pose.orientation.z = result_orientation.z();
+        ndt_pose_pub.publish(ndt_pose_msg);
+      }
       //ndt pose transform
       static tf2_ros::TransformBroadcaster tf2_ndt_br;
       geometry_msgs::TransformStamped transformStamped_ndt;
       transformStamped_ndt.header.stamp = ros::Time::now();
       transformStamped_ndt.header.frame_id = "map";
       transformStamped_ndt.child_frame_id = "ndt";
-      transformStamped_ndt.transform.translation.x = result_pose(0,3);
-      transformStamped_ndt.transform.translation.y = result_pose(1,3);
+      transformStamped_ndt.transform.translation.x = ndt_pose(0,3);
+      transformStamped_ndt.transform.translation.y = ndt_pose(1,3);
       transformStamped_ndt.transform.translation.z = 0.0;
       transformStamped_ndt.transform.rotation.w = result_orientation.w();
       transformStamped_ndt.transform.rotation.x = result_orientation.x();
       transformStamped_ndt.transform.rotation.y = result_orientation.y();
       transformStamped_ndt.transform.rotation.z = result_orientation.z();
       tf2_ndt_br.sendTransform(transformStamped_ndt);
-      
+
+      //gps odometry
+      geometry_msgs::PoseWithCovarianceStamped gps_msg;
+      gps_msg.header.frame_id = "map";
+      gps_msg.header.stamp = point_in_time;
+      gps_msg.pose.pose.position.x = nav_pose(0,3);
+      gps_msg.pose.pose.position.y = nav_pose(1,3);
+      gps_msg.pose.pose.position.z = nav_pose(2,3);
+      gps_msg.pose.pose.orientation.w = local_orientation.w();
+      gps_msg.pose.pose.orientation.x = local_orientation.x();
+      gps_msg.pose.pose.orientation.y = local_orientation.y();
+      gps_msg.pose.pose.orientation.z = local_orientation.z();
+      gps_pose_pub.publish(gps_msg);
+
       //gps pose transform
       static tf2_ros::TransformBroadcaster tf2_gps_br;
       geometry_msgs::TransformStamped transformStamped_gps;
@@ -133,34 +155,6 @@ void finalOdometry()
       transformStamped_gps.transform.rotation.y = local_orientation.y();
       transformStamped_gps.transform.rotation.z = local_orientation.z();
       tf2_gps_br.sendTransform(transformStamped_gps);
-
-      //ndt odometry
-      nav_msgs::Odometry odom_msg;
-      odom_msg.header.frame_id = "map";
-      odom_msg.child_frame_id = "ndt";
-      odom_msg.header.stamp = point_in_time;
-      odom_msg.pose.pose.position.x = result_pose(0,3);
-      odom_msg.pose.pose.position.y = result_pose(1,3);
-      odom_msg.pose.pose.position.z = result_pose(2,3);
-      odom_msg.pose.pose.orientation.w = result_orientation.w();
-      odom_msg.pose.pose.orientation.x = result_orientation.x();
-      odom_msg.pose.pose.orientation.y = result_orientation.y();
-      odom_msg.pose.pose.orientation.z = result_orientation.z();
-      odom_pub.publish(odom_msg);
-            
-      //gps odometry
-      nav_msgs::Odometry local_msg;
-      local_msg.header.frame_id = "map";
-      local_msg.child_frame_id = "local";
-      local_msg.header.stamp = point_in_time;
-      local_msg.pose.pose.position.x = nav_pose(0,3);
-      local_msg.pose.pose.position.y = nav_pose(1,3);
-      local_msg.pose.pose.position.z = nav_pose(2,3);
-      local_msg.pose.pose.orientation.w = local_orientation.w();
-      local_msg.pose.pose.orientation.x = local_orientation.x();
-      local_msg.pose.pose.orientation.y = local_orientation.y();
-      local_msg.pose.pose.orientation.z = local_orientation.z();
-      local_pub.publish(local_msg);
 
       //map publish
       if(odom_frame%30 == 0){
@@ -201,12 +195,6 @@ int main(int argc, char** argv)
   std::string pcd_map_path = "/home/a/ace_ws/src/velodyne_ndt/map/";
   std::string pcd_map_name = "map.pcd";
 
-  //Extended KalmanFilter
-  int ekf_window_size=100;
-  double sensor_diff_x = 0.0;
-  double sensor_diff_y = 0.0;
-  double sensor_diff_z = 0.0;
-
   nh.getParam("pcd_map_resolution", pcd_map_resolution);
   nh.getParam("pcd_map_path", pcd_map_path);
   nh.getParam("pcd_map_name", pcd_map_name);
@@ -224,11 +212,6 @@ int main(int argc, char** argv)
   nh.getParam("ndt_near_points", ndt_near_points);
   nh.getParam("ndt_max_iteration", ndt_max_iteration);
   nh.getParam("ndt_max_threads", ndt_max_threads);
-
-  nh.getParam("ekf_window_size", ekf_window_size);
-  nh.getParam("sensor_diff_x", sensor_diff_x);
-  nh.getParam("sensor_diff_y", sensor_diff_y);
-  nh.getParam("sensor_diff_z", sensor_diff_z);
   
   ndt_matching.setMapTransformInfo(map_rotation_theta, map_translation_x, map_translation_y, map_translation_z);
   if(is_init == true){
@@ -236,16 +219,14 @@ int main(int argc, char** argv)
     ndt_matching.setInitPosition(odom_init_x, odom_init_y, odom_init_z, odom_init_rotation);
   }
   ndt_matching.init(pcd_map_resolution, pcd_map_path, pcd_map_name, submap_select, search_radius, ndt_near_points, ndt_max_iteration, ndt_max_threads);
-  extended_kalman_filter.init(ekf_window_size, sensor_diff_x, sensor_diff_y, sensor_diff_z);
-
 
   ros::Subscriber filtered_lidar_sub = nh.subscribe<sensor_msgs::PointCloud2>("/filtered_point", 1, lidarHandler);
-  ros::Subscriber pose_sub = nh.subscribe<geometry_msgs::PoseStamped>("/filtered_pose", 1, poseCallback);
+  ros::Subscriber pose_sub = nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>("/filtered_pose", 1, poseCallback);
 
   map_pub = nh.advertise<sensor_msgs::PointCloud2>("/pcd_map", 1);
-  ndt_pub = nh.advertise<sensor_msgs::PointCloud2>("/ndt", 1);
-  odom_pub = nh.advertise<nav_msgs::Odometry>("/final_odom", 1);
-  local_pub = nh.advertise<nav_msgs::Odometry>("/local_odom", 1);
+  ndt_pc_pub = nh.advertise<sensor_msgs::PointCloud2>("/ndt", 1);
+  ndt_pose_pub = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("/ndt_odom", 1);
+  gps_pose_pub = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("/local_odom", 1);
 
   std::thread finalOdometryProcess{finalOdometry};
 

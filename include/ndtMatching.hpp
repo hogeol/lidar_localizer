@@ -46,6 +46,7 @@ namespace NdtMatching{
     void relocalize(const Eigen::Matrix4f &last_gps_odom);
     double calDistance(const Eigen::Vector3f &gps_xyz, const Eigen::Vector3f &ndt_xyz);
     pcl::PointCloud<pcl::PointXYZI>::Ptr mp_pcd_map;
+    bool mp_pose_inited;
       ndtMatching(void);
   };
 }
