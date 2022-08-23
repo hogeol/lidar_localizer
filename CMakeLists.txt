@@ -106,16 +106,26 @@ target_link_libraries(local_pose_processing_node
   ${EIGEN3_LIBRARIES}
 )
 
-#final odometry node
+#ndt matching node
 add_executable(
-final_odometry_node
+ndt_matching_node
 src/ndtMatching.cpp
-src/finalOdometryNode.cpp
-src/extendedKalmanFilter.cpp
+src/ndtMatchingNode.cpp
 )
-target_link_libraries(final_odometry_node
+target_link_libraries(ndt_matching_node
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
   ${EIGEN3_LIBRARIES}
   pcl_omp
+)
+
+#kalman filter node (final odometry)
+add_executable(
+  extended_kalman_filter_node
+  src/extendedKalmanFilter.cpp
+  src/extendedKalmanFilterNode.cpp
+)
+target_link_libraries(extended_kalman_filter_node
+  ${catkin_LIBRARIES}
+  ${EIGEN3_LIBRARIES}
 )

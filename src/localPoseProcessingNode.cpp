@@ -14,6 +14,10 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
+//tf
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
+
 //local
 #include "localPoseProcessing.hpp"
 
@@ -65,19 +69,34 @@ void localProcessing()
       imu_processing.weightPrevOrientation(pres_orientation);
       imu_frame++;
       if(imu_frame % imu_processing.getImuWindowSize() == 0){
-        geometry_msgs::PoseWithCovarianceStamped local_pose;
-        local_pose.header.stamp = imu_in_time;
-        local_pose.pose.pose.position.x = pres_position(0);
-        local_pose.pose.pose.position.y = pres_position(1);
-        local_pose.pose.pose.position.z = pres_position(2);
-        local_pose.pose.pose.orientation.w = pres_orientation.w();
-        local_pose.pose.pose.orientation.x = pres_orientation.x();
-        local_pose.pose.pose.orientation.y = pres_orientation.y();
-        local_pose.pose.pose.orientation.z = pres_orientation.z();
-        filtered_pose_pub.publish(local_pose);
+        geometry_msgs::PoseWithCovarianceStamped local_pose_msg;
+        local_pose_msg.header.frame_id = "map";
+        local_pose_msg.header.stamp = imu_in_time;
+        local_pose_msg.pose.pose.position.x = pres_position(0);
+        local_pose_msg.pose.pose.position.y = pres_position(1);
+        local_pose_msg.pose.pose.position.z = pres_position(2);
+        local_pose_msg.pose.pose.orientation.w = pres_orientation.w();
+        local_pose_msg.pose.pose.orientation.x = pres_orientation.x();
+        local_pose_msg.pose.pose.orientation.y = pres_orientation.y();
+        local_pose_msg.pose.pose.orientation.z = pres_orientation.z();
+        filtered_pose_pub.publish(local_pose_msg);
         //imu_processing.positionClear();
         imu_frame = 0;
       }
+      //gps pose transform
+      static tf2_ros::TransformBroadcaster tf2_gps_br;
+      geometry_msgs::TransformStamped transformStamped_gps;
+      transformStamped_gps.header.stamp = ros::Time::now();
+      transformStamped_gps.header.frame_id = "map";
+      transformStamped_gps.child_frame_id = "gps";
+      transformStamped_gps.transform.translation.x = pres_position(0);
+      transformStamped_gps.transform.translation.y = pres_position(1);
+      transformStamped_gps.transform.translation.z = 0.0;
+      transformStamped_gps.transform.rotation.w = pres_orientation.w();
+      transformStamped_gps.transform.rotation.x = pres_orientation.x();
+      transformStamped_gps.transform.rotation.y = pres_orientation.y();
+      transformStamped_gps.transform.rotation.z = pres_orientation.z();
+      tf2_gps_br.sendTransform(transformStamped_gps);
     }
     std::chrono::milliseconds dura(3);
     std::this_thread::sleep_for(dura);

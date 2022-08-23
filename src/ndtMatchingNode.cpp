@@ -24,7 +24,6 @@
 ros::Publisher map_pub;
 ros::Publisher ndt_pc_pub;
 ros::Publisher ndt_pose_pub;
-ros::Publisher gps_pose_pub;
 
 std::queue<sensor_msgs::PointCloud2ConstPtr> lidar_buf;
 std::queue<geometry_msgs::PoseWithCovarianceStampedConstPtr> filtered_pose_buf;
@@ -113,49 +112,6 @@ void finalOdometry()
         ndt_pose_msg.pose.pose.orientation.z = result_orientation.z();
         ndt_pose_pub.publish(ndt_pose_msg);
       }
-      //ndt pose transform
-      static tf2_ros::TransformBroadcaster tf2_ndt_br;
-      geometry_msgs::TransformStamped transformStamped_ndt;
-      transformStamped_ndt.header.stamp = ros::Time::now();
-      transformStamped_ndt.header.frame_id = "map";
-      transformStamped_ndt.child_frame_id = "ndt";
-      transformStamped_ndt.transform.translation.x = ndt_pose(0,3);
-      transformStamped_ndt.transform.translation.y = ndt_pose(1,3);
-      transformStamped_ndt.transform.translation.z = 0.0;
-      transformStamped_ndt.transform.rotation.w = result_orientation.w();
-      transformStamped_ndt.transform.rotation.x = result_orientation.x();
-      transformStamped_ndt.transform.rotation.y = result_orientation.y();
-      transformStamped_ndt.transform.rotation.z = result_orientation.z();
-      tf2_ndt_br.sendTransform(transformStamped_ndt);
-
-      //gps odometry
-      geometry_msgs::PoseWithCovarianceStamped gps_msg;
-      gps_msg.header.frame_id = "map";
-      gps_msg.header.stamp = point_in_time;
-      gps_msg.pose.pose.position.x = nav_pose(0,3);
-      gps_msg.pose.pose.position.y = nav_pose(1,3);
-      gps_msg.pose.pose.position.z = nav_pose(2,3);
-      gps_msg.pose.pose.orientation.w = local_orientation.w();
-      gps_msg.pose.pose.orientation.x = local_orientation.x();
-      gps_msg.pose.pose.orientation.y = local_orientation.y();
-      gps_msg.pose.pose.orientation.z = local_orientation.z();
-      gps_pose_pub.publish(gps_msg);
-
-      //gps pose transform
-      static tf2_ros::TransformBroadcaster tf2_gps_br;
-      geometry_msgs::TransformStamped transformStamped_gps;
-      transformStamped_gps.header.stamp = ros::Time::now();
-      transformStamped_gps.header.frame_id = "map";
-      transformStamped_gps.child_frame_id = "local";
-      transformStamped_gps.transform.translation.x = nav_pose(0,3);
-      transformStamped_gps.transform.translation.y = nav_pose(1,3);
-      transformStamped_gps.transform.translation.z = 0.0;
-      transformStamped_gps.transform.rotation.w = local_orientation.w();
-      transformStamped_gps.transform.rotation.x = local_orientation.x();
-      transformStamped_gps.transform.rotation.y = local_orientation.y();
-      transformStamped_gps.transform.rotation.z = local_orientation.z();
-      tf2_gps_br.sendTransform(transformStamped_gps);
-
       //map publish
       if(odom_frame%30 == 0){
         sensor_msgs::PointCloud2 map_msg;
@@ -226,7 +182,6 @@ int main(int argc, char** argv)
   map_pub = nh.advertise<sensor_msgs::PointCloud2>("/pcd_map", 1);
   ndt_pc_pub = nh.advertise<sensor_msgs::PointCloud2>("/ndt", 1);
   ndt_pose_pub = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("/ndt_odom", 1);
-  gps_pose_pub = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("/local_odom", 1);
 
   std::thread finalOdometryProcess{finalOdometry};
 
