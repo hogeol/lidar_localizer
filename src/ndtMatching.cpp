@@ -65,7 +65,7 @@ namespace NdtMatching{
     //m_ndt->align(*aligned_pcd);
     double ndt_score =  m_ndt->getFitnessScore();
     if(m_ndt->hasConverged())
-      printf("--\nscore: %.4f, iteration: %d\n---\n", ndt_score, m_ndt->getFinalNumIteration());
+      //printf("--\nscore: %.4f, iteration: %d\n---\n", ndt_score, m_ndt->getFinalNumIteration());
     
     //In fitness score, lower is better
     m_last_pose = m_ndt->getFinalTransformation();

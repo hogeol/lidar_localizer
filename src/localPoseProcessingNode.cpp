@@ -7,7 +7,7 @@
 //ros
 #include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/PoseStamped.h>
 
 //eigen
 #include <Eigen/Core>
@@ -15,7 +15,7 @@
 #include <Eigen/Geometry>
 
 //tf
-#include <tf2_ros/transform_broadcaster.h>
+#include <tf/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
 
 //local
@@ -24,11 +24,11 @@
 ros::Publisher filtered_pose_pub;
 
 std::queue<sensor_msgs::ImuConstPtr> imu_buf;
-std::queue<geometry_msgs::PoseWithCovarianceStampedConstPtr> utm_buf;
+std::queue<geometry_msgs::PoseStampedConstPtr> utm_buf;
 
 std::mutex mutex_control;
 
-ImuProcessing::imuProcessing imu_processing;
+LocalPoseProcessing::localPoseProcessing local_pose_processing;
 
 void imuHandler(const sensor_msgs::ImuConstPtr &imu_msg)
 {
@@ -40,7 +40,7 @@ void imuHandler(const sensor_msgs::ImuConstPtr &imu_msg)
   mutex_control.unlock();
 }
 
-void utmCallback(const geometry_msgs::PoseWithCovarianceStampedConstPtr &utm_msg)
+void utmCallback(const geometry_msgs::PoseStampedConstPtr &utm_msg)
 {
   mutex_control.lock();
   utm_buf.push(utm_msg);
@@ -62,41 +62,29 @@ void localProcessing()
       Eigen::Vector3d pres_position;
       imu_buf.pop();
       if(!utm_buf.empty()){
-        pres_position = Eigen::Vector3d(utm_buf.front()->pose.pose.position.x, utm_buf.front()->pose.pose.position.y, utm_buf.front()->pose.pose.position.z);
+        pres_position = Eigen::Vector3d(utm_buf.front()->pose.position.x, utm_buf.front()->pose.position.y, utm_buf.front()->pose.position.z);
+        local_pose_processing.weightPrevPosition(pres_position);
         utm_buf.pop();
       }
       mutex_control.unlock();
-      imu_processing.weightPrevOrientation(pres_orientation);
+      local_pose_processing.weightPrevOrientation(pres_orientation);
       imu_frame++;
-      if(imu_frame % imu_processing.getImuWindowSize() == 0){
-        geometry_msgs::PoseWithCovarianceStamped local_pose_msg;
-        local_pose_msg.header.frame_id = "map";
+      pres_orientation.normalize();
+
+      if(imu_frame % local_pose_processing.getImuWindowSize() == 0){
+        geometry_msgs::PoseStamped local_pose_msg;
         local_pose_msg.header.stamp = imu_in_time;
-        local_pose_msg.pose.pose.position.x = pres_position(0);
-        local_pose_msg.pose.pose.position.y = pres_position(1);
-        local_pose_msg.pose.pose.position.z = pres_position(2);
-        local_pose_msg.pose.pose.orientation.w = pres_orientation.w();
-        local_pose_msg.pose.pose.orientation.x = pres_orientation.x();
-        local_pose_msg.pose.pose.orientation.y = pres_orientation.y();
-        local_pose_msg.pose.pose.orientation.z = pres_orientation.z();
+        local_pose_msg.header.frame_id = "map";
+        local_pose_msg.pose.position.x = pres_position(0);
+        local_pose_msg.pose.position.y = pres_position(1);
+        local_pose_msg.pose.position.z = pres_position(2);
+        local_pose_msg.pose.orientation.w = pres_orientation.w();
+        local_pose_msg.pose.orientation.x = pres_orientation.x();
+        local_pose_msg.pose.orientation.y = pres_orientation.y();
+        local_pose_msg.pose.orientation.z = pres_orientation.z();
         filtered_pose_pub.publish(local_pose_msg);
-        //imu_processing.positionClear();
         imu_frame = 0;
       }
-      //gps pose transform
-      static tf2_ros::TransformBroadcaster tf2_gps_br;
-      geometry_msgs::TransformStamped transformStamped_gps;
-      transformStamped_gps.header.stamp = ros::Time::now();
-      transformStamped_gps.header.frame_id = "map";
-      transformStamped_gps.child_frame_id = "gps";
-      transformStamped_gps.transform.translation.x = pres_position(0);
-      transformStamped_gps.transform.translation.y = pres_position(1);
-      transformStamped_gps.transform.translation.z = 0.0;
-      transformStamped_gps.transform.rotation.w = pres_orientation.w();
-      transformStamped_gps.transform.rotation.x = pres_orientation.x();
-      transformStamped_gps.transform.rotation.y = pres_orientation.y();
-      transformStamped_gps.transform.rotation.z = pres_orientation.z();
-      tf2_gps_br.sendTransform(transformStamped_gps);
     }
     std::chrono::milliseconds dura(3);
     std::this_thread::sleep_for(dura);
@@ -105,7 +93,7 @@ void localProcessing()
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "imuProcessing");
+  ros::init(argc, argv, "localProcessing");
   ros::NodeHandle nh;
 
   std::string imu_topic = "/vectornav/IMU";
@@ -117,11 +105,11 @@ int main(int argc, char** argv)
   nh.getParam("utm_window_size", utm_window_size);
 
   ros::Subscriber imu_sub = nh.subscribe<sensor_msgs::Imu>(imu_topic, 1, imuHandler);
-  ros::Subscriber utm_sub = nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>("/utm", 1, utmCallback);
+  ros::Subscriber utm_sub = nh.subscribe<geometry_msgs::PoseStamped>("/utm", 1, utmCallback);
 
-  filtered_pose_pub = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("/filtered_pose", 1);  
+  filtered_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/filtered_pose", 1);  
 
-  imu_processing.init(imu_window_size, utm_window_size);
+  local_pose_processing.init(imu_window_size, utm_window_size);
 
   std::thread localProcessingProcess{localProcessing};
   

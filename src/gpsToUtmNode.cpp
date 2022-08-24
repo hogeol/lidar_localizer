@@ -7,7 +7,7 @@
 #include <Eigen/Dense>
 //ros
 #include <ros/ros.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <std_msgs/Header.h>
 #include <tf/tf.h>
@@ -44,17 +44,17 @@ void gpsToUtm()
       Eigen::Vector3d utm_pose;
       gpsToUtmClass.gpsConvertToUtm(latitude, longitude, altitude, utm_pose);
         
-      geometry_msgs::PoseWithCovarianceStamped local_pose;
+      geometry_msgs::PoseStamped local_pose;
       tf::Quaternion q;
       q.setRPY(0.0, 0.0, 0.0);
       local_pose.header = gps_in_header;
-      local_pose.pose.pose.position.x = utm_pose(0);
-      local_pose.pose.pose.position.y = utm_pose(1);
-      local_pose.pose.pose.position.z = utm_pose(2);
-      local_pose.pose.pose.orientation.w = q.w();
-      local_pose.pose.pose.orientation.x = q.x();
-      local_pose.pose.pose.orientation.y = q.y();
-      local_pose.pose.pose.orientation.z = q.z();
+      local_pose.pose.position.x = utm_pose(0);
+      local_pose.pose.position.y = utm_pose(1);
+      local_pose.pose.position.z = utm_pose(2);
+      local_pose.pose.orientation.w = q.w();
+      local_pose.pose.orientation.x = q.x();
+      local_pose.pose.orientation.y = q.y();
+      local_pose.pose.orientation.z = q.z();
       utm_pub.publish(local_pose);
     }
     std::chrono::milliseconds dura(3);
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 
   ros::Subscriber gps_sub = nh.subscribe(gps_topic,1 ,gpsCallback);
 
-  utm_pub = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("/utm", 1);
+  utm_pub = nh.advertise<geometry_msgs::PoseStamped>("/utm", 1);
 
   std::thread gpsToUtmProcess{gpsToUtm};
 

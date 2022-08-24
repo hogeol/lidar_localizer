@@ -5,8 +5,8 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
-namespace ImuProcessing{
-  class imuProcessing{
+namespace LocalPoseProcessing{
+  class localPoseProcessing{
   private:
     int m_imu_window_size;
     double m_imu_weight;
@@ -15,11 +15,11 @@ namespace ImuProcessing{
     Eigen::Quaterniond m_prev_orientation;   
   public:
     void init(const int &imu_window_size, const int &gps_window_size);
-    void weightPrevPosition(const Eigen::Vector3d &pres_position);
-    void weightPrevOrientation(const Eigen::Quaterniond &pres_orientation);
+    void weightPrevPosition(Eigen::Vector3d &pres_position);
+    void weightPrevOrientation(Eigen::Quaterniond &pres_orientation);
     void positionClear();
     int getImuWindowSize() const;
-      imuProcessing(void);
+      localPoseProcessing(void);
   };
 }
 
