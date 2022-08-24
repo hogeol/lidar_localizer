@@ -51,19 +51,8 @@ void ekfProcess()
       pose_in_ndt(0,3) = position_in_ndt(0);
       pose_in_ndt(1,3) = position_in_ndt(1);
       pose_in_ndt(2,3) = position_in_ndt(2);
-      //extended_kalman_filter.processKalmanFilter(pose_in_ndt, final_pose);
+      extended_kalman_filter.processKalmanFilter(pose_in_ndt, final_pose);
       //printf("\n---\npose:\nx: %.4f\ny: %.4f\nz: %.4f\n---\n", pose_in_ndt(0,3), pose_in_ndt(1,3), pose_in_ndt(2,3));
-      
-      Eigen::Matrix4d bias;
-      bias.block<3,3>(0,0) = quaternion_in_ndt.toRotationMatrix();
-      bias(0,3) = position_in_ndt(0);
-      bias(1,3) = position_in_ndt(1);
-      bias(2,3) = position_in_ndt(2);
-      Eigen::Vector4d m_sensor_diff(0.6, 0.0, 0.0, 1.0);
-      Eigen::Vector4d sensor_diff = bias * m_sensor_diff;
-      final_pose(0,3) = sensor_diff(0);
-      final_pose(1,3) = sensor_diff(1);
-      final_pose(2,3) = sensor_diff(2);
 
       //Eigen::Quaterniond final_quat(final_pose.block<3,3>(0,0));
       Eigen::Quaterniond final_quat;
