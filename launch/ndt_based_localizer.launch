@@ -28,8 +28,8 @@
   <arg name="pcd_map_path" default="$(find lidar_localizer)/map/" />
   <arg name="pcd_map_name" default="leaf_0.0001.pcd" />
     <!-- map transform matrix info if needed-->
-  <arg name="map_translation_x" default="0.0" />
-  <arg name="map_translation_y" default="0.0" />
+  <arg name="map_translation_x" default="0.13" />
+  <arg name="map_translation_y" default="-0.54" />
   <arg name="map_translation_z" default="0.0" />
   <arg name="map_rotation_theta" default="0.0" />
   <arg name="user_init_pose" default="false" />
@@ -37,12 +37,15 @@
   <arg name="odom_init_y" default="0.0" />
   <arg name="odom_init_z" default="0.0" />
   <arg name="odom_init_rotation" default="-1.2" />
+  <arg name="sensor_diff_x" default="0.4" />
+  <arg name="sensor_diff_y" default="0.0" />
+  <arg name="sensor_diff_z" default="0.0" />
     <!-- submap_select 1 is k-nearest search, 0 is radius search-->
   <arg name="submap_select" default="1" />
   <arg name="kdtree_search_radius" default="200.0" />
   <arg name="ndt_near_points" default="400000" />
   <arg name="ndt_max_iteration" default="50" />
-  <arg name="ndt_max_threads" default="10" />
+  <arg name="ndt_max_threads" default="15" />
 
   <!-- imu and utm arguments-->
   <arg name="imu_topic" default="/vectornav/IMU" />
@@ -50,10 +53,7 @@
   <arg name="utm_window_size" default="2" />
   
   <!-- ekf arguments -->
-  <arg name="ekf_window_size" default="10" />
-  <arg name="sensor_diff_x" default="0.6" />
-  <arg name="sensor_diff_y" default="0.0" />
-  <arg name="sensor_diff_z" default="0.0" />
+  <arg name="ekf_window_size" default="4" />
 
   <!-- rviz -->
   <arg name="rviz" default="true" />

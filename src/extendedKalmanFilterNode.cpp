@@ -35,6 +35,8 @@ void ndtCallback(const nav_msgs::OdometryConstPtr &ndt_pose_msg)
   mutex_control.unlock();
 }
 
+bool position_init;
+
 void ekfProcess()
 {
   while(1){
@@ -51,12 +53,15 @@ void ekfProcess()
       pose_in_ndt(0,3) = position_in_ndt(0);
       pose_in_ndt(1,3) = position_in_ndt(1);
       pose_in_ndt(2,3) = position_in_ndt(2);
+      if(position_init == false){
+        extended_kalman_filter.setInitPosition(pose_in_ndt);
+        position_init = true;
+        continue;
+      }
       extended_kalman_filter.processKalmanFilter(pose_in_ndt, final_pose);
       //printf("\n---\npose:\nx: %.4f\ny: %.4f\nz: %.4f\n---\n", pose_in_ndt(0,3), pose_in_ndt(1,3), pose_in_ndt(2,3));
 
-      //Eigen::Quaterniond final_quat(final_pose.block<3,3>(0,0));
-      Eigen::Quaterniond final_quat;
-      final_quat = quaternion_in_ndt;
+      Eigen::Quaterniond final_quat(final_pose.block<3,3>(0,0));
       final_quat.normalize();
 
       //ndt pose transform
@@ -90,21 +95,17 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "kalmanFilter");
   ros::NodeHandle nh;
 
-  int ekf_window_size = 10;
-  double sensor_diff_x = 0.0;
-  double sensor_diff_y = 0.0;
-  double sensor_diff_z = 0.0;
+  position_init = false;
 
-  nh.getParam("sensor_diff_x", sensor_diff_x);
-  nh.getParam("sensor_diff_y", sensor_diff_y);
-  nh.getParam("sensor_diff_z", sensor_diff_z);
+  int ekf_window_size = 10;
+
   nh.getParam("ekf_window_size", ekf_window_size);
 
   ros::Subscriber ndt_sub = nh.subscribe<nav_msgs::Odometry>("/ndt_pose", 1, ndtCallback);
 
   final_odom_pub = nh.advertise<nav_msgs::Odometry>("/final_odom", 1);
 
-  extended_kalman_filter.correctionInit(ekf_window_size, sensor_diff_x, sensor_diff_y, sensor_diff_z);
+  extended_kalman_filter.correctionInit(ekf_window_size);
   
   std::thread ekfProcessProcessing{ekfProcess};
 

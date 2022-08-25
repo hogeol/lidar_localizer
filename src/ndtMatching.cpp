@@ -15,7 +15,14 @@ namespace NdtMatching{
     Eigen::AngleAxisf init_rotation(theta, Eigen::Vector3f::UnitZ ());
     Eigen::Translation3f init_translation(x, y, z);
     m_last_pose = (init_translation * init_rotation).matrix ();
-    printf("\ninit position\nx: %.5f\ny: %.5f\nz: %.5f\nposition inited\n", x, y, z);
+    printf("\nx: %.5f\ny: %.5f\nz: %.5f\nposition inited\n", x, y, z);
+  }
+
+  void ndtMatching::setGpsLidarTF(const double &diff_x, const double &diff_y, const double &diff_z)
+  {
+    m_diff_x = diff_x;
+    m_diff_y = diff_y;
+    m_diff_z = diff_z;
   }
 
   void ndtMatching::init(const double &map_resolution, const std::string &map_path, const std::string &map_name, const bool &submap_select, const double &search_radius, const int & near_points, const int &max_iter, const int &ndt_threads)
@@ -46,7 +53,7 @@ namespace NdtMatching{
     m_kd_tree->setInputCloud(mp_pcd_map);
     m_ndt->setTransformationEpsilon(0.001);
     m_ndt->setStepSize(0.1);
-    m_ndt->setResolution(2.75);
+    m_ndt->setResolution(2.8);
     //m_ndt->setNumThreads(omp_get_max_threads());
     m_ndt->setNumThreads(ndt_threads);
     m_ndt->setMaximumIterations(max_iter);
@@ -88,6 +95,7 @@ namespace NdtMatching{
     }
     pcl::transformPointCloud(*pc_in, *pc_out, m_last_pose);
     pose_out = m_last_pose;    
+    sensorTFCorrection(pose_out);
     end = clock();
 
     // for(int i=0; i<4; i++){
@@ -98,6 +106,16 @@ namespace NdtMatching{
     // }
     double result_time = (double)(end - start)/CLOCKS_PER_SEC;
     //printf("\nndt_time: %f", result_time);
+  }
+
+  void ndtMatching::sensorTFCorrection(Eigen::Matrix4f &pose_out)
+  {
+    Eigen::Vector4f tf_bias(m_diff_x, m_diff_y, m_diff_z, 1.0);
+    tf_bias = m_last_pose * tf_bias;
+    pose_out(0,3) = tf_bias(0);
+    pose_out(1,3) = tf_bias(1);
+    pose_out(2,3) = tf_bias(2);
+    pose_out(3,3) = tf_bias(3);
   }
 
   void ndtMatching::processNdtWithColor(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_out, const Eigen::Matrix4f &pose_in, Eigen::Matrix4f &pose_out)

@@ -34,7 +34,6 @@ namespace LidarProcessing{
     double m_leaf_size;
     Lidar::lidar m_lidar_info;
     robotDimension m_robot_info;
-    pcl::PointCloud<pcl::PointXYZI>::Ptr m_point_xyzi;
   public:
     void setLidar(const int &scan_line, const double &max_distance, const double &min_distance, const double &vertical_angle, const double &downsampling_size);
     void setRobot (const double &x_min, const double &x_max, const double &y_min, const double &y_max, const double &z_min , const double &z_max);

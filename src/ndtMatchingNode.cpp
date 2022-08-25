@@ -79,6 +79,7 @@ void finalOdometry()
         filtered_pose_buf.pop();
         lidar_buf.pop();
         mutex_control.unlock();
+        continue;
       }
       else{
           filtered_pose_buf.pop();
@@ -136,6 +137,8 @@ void finalOdometry()
         odom_frame = 0;
       }
       odom_frame++;
+      double diff = sqrt(pow(ndt_pose(0,3) - nav_pose(0,3), 2) + pow(ndt_pose(1,3) - nav_pose(1,3), 2));
+      printf("\n---\ndiff: %.4f\n---\n", diff);
     }
     std::chrono::milliseconds dura(3);
     std::this_thread::sleep_for(dura);
@@ -158,6 +161,9 @@ int main(int argc, char** argv)
   double odom_init_y = 0.0;
   double odom_init_z = 0.0;
   double odom_init_rotation=0.0;
+  double sensor_diff_x = 0.0;
+  double sensor_diff_y = 0.0;
+  double sensor_diff_z = 0.0;
   double map_rotation_theta=0.0;
   double map_translation_x=0.0;
   double map_translation_y=0.0;
@@ -178,6 +184,9 @@ int main(int argc, char** argv)
   nh.getParam("odom_init_y", odom_init_y);
   nh.getParam("odom_init_z", odom_init_z);
   nh.getParam("odom_init_rotation", odom_init_rotation);
+  nh.getParam("sensor_diff_x", sensor_diff_x);
+  nh.getParam("sensor_diff_y", sensor_diff_y);
+  nh.getParam("sensor_diff_z", sensor_diff_z);
   nh.getParam("submap_select", submap_select);
   nh.getParam("kdtree_search_radius", search_radius);
   nh.getParam("ndt_near_points", ndt_near_points);
@@ -190,6 +199,7 @@ int main(int argc, char** argv)
     ndt_matching.setInitPosition(odom_init_x, odom_init_y, odom_init_z, odom_init_rotation);
   }
   ndt_matching.init(pcd_map_resolution, pcd_map_path, pcd_map_name, submap_select, search_radius, ndt_near_points, ndt_max_iteration, ndt_max_threads);
+  ndt_matching.setGpsLidarTF(sensor_diff_x, sensor_diff_y, sensor_diff_z);
 
   ros::Subscriber filtered_lidar_sub = nh.subscribe<sensor_msgs::PointCloud2>("/filtered_point", 1, lidarHandler);
   ros::Subscriber pose_sub = nh.subscribe<geometry_msgs::PoseStamped>("/filtered_pose", 1, poseCallback);
