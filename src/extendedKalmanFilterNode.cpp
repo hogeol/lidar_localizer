@@ -36,7 +36,6 @@ void ndtCallback(const nav_msgs::OdometryConstPtr &ndt_pose_msg)
 }
 
 bool position_init;
-
 void ekfProcess()
 {
   while(1){
@@ -57,15 +56,15 @@ void ekfProcess()
         continue;
       }
       extended_kalman_filter.processKalmanFilter(pose_in_ndt, final_pose);
-      //printf("\n---\npose:\nx: %.4f\ny: %.4f\nz: %.4f\n---\n", pose_in_ndt(0,3), pose_in_ndt(1,3), pose_in_ndt(2,3));
 
+      Eigen::Vector3d final_position = final_pose.translation();
       Eigen::Quaterniond final_quat(final_pose.rotation());
       final_quat.normalize();
 
       //ndt pose transform
       static tf::TransformBroadcaster final_tf_br;
       tf::Transform tf_map_to_final;
-      tf_map_to_final.setOrigin(tf::Vector3(final_pose.translation().x(), final_pose.translation().y(), final_pose.translation().z()));
+      tf_map_to_final.setOrigin(tf::Vector3(final_position.x(), final_position.y(), final_position.z()));
       tf_map_to_final.setRotation(tf::Quaternion(final_quat.x(), final_quat.y(), final_quat.z(), final_quat.w()));
       final_tf_br.sendTransform(tf::StampedTransform(tf_map_to_final, ros::Time::now(), "map", "final"));
       
@@ -74,9 +73,9 @@ void ekfProcess()
       final_pose_msg.header.stamp = time_in_ndt;
       final_pose_msg.header.frame_id = "map";
       final_pose_msg.child_frame_id = "final";
-      final_pose_msg.pose.pose.position.x = final_pose(0,3);
-      final_pose_msg.pose.pose.position.y = final_pose(1,3);
-      final_pose_msg.pose.pose.position.z = final_pose(2,3);
+      final_pose_msg.pose.pose.position.x = final_position.x();
+      final_pose_msg.pose.pose.position.y = final_position.y();
+      final_pose_msg.pose.pose.position.z = final_position.z();
       final_pose_msg.pose.pose.orientation.w = final_quat.w();
       final_pose_msg.pose.pose.orientation.x = final_quat.x();
       final_pose_msg.pose.pose.orientation.y = final_quat.y();
