@@ -50,9 +50,9 @@ void ekfProcess()
       Eigen::Matrix4d pose_in_ndt = Eigen::Matrix4d::Identity();
       Eigen::Matrix4d final_pose = Eigen::Matrix4d::Identity();
       pose_in_ndt.block<3,3>(0,0) = quaternion_in_ndt.toRotationMatrix();
-      pose_in_ndt(0,3) = position_in_ndt(0);
-      pose_in_ndt(1,3) = position_in_ndt(1);
-      pose_in_ndt(2,3) = position_in_ndt(2);
+      pose_in_ndt(0,3) = position_in_ndt.x();
+      pose_in_ndt(1,3) = position_in_ndt.y();
+      pose_in_ndt(2,3) = position_in_ndt.z();
       if(position_init == false){
         extended_kalman_filter.setInitPosition(pose_in_ndt);
         position_init = true;

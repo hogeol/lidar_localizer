@@ -112,10 +112,10 @@ namespace NdtMatching{
   {
     Eigen::Vector4f tf_bias(m_diff_x, m_diff_y, m_diff_z, 1.0);
     tf_bias = m_last_pose * tf_bias;
-    pose_out(0,3) = tf_bias(0);
-    pose_out(1,3) = tf_bias(1);
-    pose_out(2,3) = tf_bias(2);
-    pose_out(3,3) = tf_bias(3);
+    pose_out(0,3) = tf_bias.x();
+    pose_out(1,3) = tf_bias.y();
+    pose_out(2,3) = tf_bias.z();
+    pose_out(3,3) = tf_bias.w();
   }
 
   void ndtMatching::processNdtWithColor(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_out, const Eigen::Matrix4f &pose_in, Eigen::Matrix4f &pose_out)
@@ -194,9 +194,9 @@ namespace NdtMatching{
     std::vector<int> indices;
     std::vector<float> sqr_dists;
     pcl::PointXYZI base_query;
-    base_query.x = based_point(0);
-    base_query.y = based_point(1);
-    base_query.z = based_point(2);
+    base_query.x = based_point.x();
+    base_query.y = based_point.y();
+    base_query.z = based_point.z();
     base_query.intensity = 0.0;
     m_kd_tree->radiusSearch(base_query, m_search_radius, indices, sqr_dists);
     for(const auto &idx: indices){
@@ -209,9 +209,9 @@ namespace NdtMatching{
     std::vector<int> indices;
     std::vector<float> sqr_dists;
     pcl::PointXYZI base_query;
-    base_query.x = based_point(0);
-    base_query.y = based_point(1);
-    base_query.z = based_point(2);
+    base_query.x = based_point.x();
+    base_query.y = based_point.y();
+    base_query.z = based_point.z();
     base_query.intensity = 0.0;
     m_kd_tree->nearestKSearch(base_query, m_near_points, indices, sqr_dists);
     for(const auto &idx: indices){
@@ -231,7 +231,7 @@ namespace NdtMatching{
   double ndtMatching::calDistance(const Eigen::Vector3f &gps_xyz, const Eigen::Vector3f &ndt_xyz)
   {
     //printf("\ndistance: %.4f\n", sqrt(pow(gps_xyz(0) - ndt_xyz(0), 2) + pow(gps_xyz(1) - ndt_xyz(1), 2)));
-    return (sqrt(pow(gps_xyz(0) - ndt_xyz(0), 2) + pow(gps_xyz(1) - ndt_xyz(1), 2)));    
+    return (sqrt(pow(gps_xyz.x() - ndt_xyz.x(), 2) + pow(gps_xyz.y() - ndt_xyz.y(), 2)));    
   }
   
   void ndtMatching::relocalize(const Eigen::Matrix4f &last_gps_odom)

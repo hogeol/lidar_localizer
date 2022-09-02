@@ -75,9 +75,9 @@ void localProcessing()
         geometry_msgs::PoseStamped local_pose_msg;
         local_pose_msg.header.stamp = imu_in_time;
         local_pose_msg.header.frame_id = "map";
-        local_pose_msg.pose.position.x = pres_position(0);
-        local_pose_msg.pose.position.y = pres_position(1);
-        local_pose_msg.pose.position.z = pres_position(2);
+        local_pose_msg.pose.position.x = pres_position.x();
+        local_pose_msg.pose.position.y = pres_position.y();
+        local_pose_msg.pose.position.z = pres_position.z();
         local_pose_msg.pose.orientation.w = pres_orientation.w();
         local_pose_msg.pose.orientation.x = pres_orientation.x();
         local_pose_msg.pose.orientation.y = pres_orientation.y();

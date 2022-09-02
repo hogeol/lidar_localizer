@@ -11,9 +11,9 @@ namespace LocalPoseProcessing{
 
   void localPoseProcessing::weightPrevPosition(Eigen::Vector3d &pres_position)
   {
-    m_prev_position(0) = m_gps_weight * m_prev_position(0) + (1 - m_gps_weight) * pres_position(0);
-    m_prev_position(1) = m_gps_weight * m_prev_position(1) + (1 - m_gps_weight) * pres_position(1);
-    m_prev_position(2) = m_gps_weight * m_prev_position(2) + (1 - m_gps_weight) * pres_position(2);
+    m_prev_position.x() = m_gps_weight * m_prev_position.x() + (1 - m_gps_weight) * pres_position.x();
+    m_prev_position.y() = m_gps_weight * m_prev_position.y() + (1 - m_gps_weight) * pres_position.y();
+    m_prev_position.z() = m_gps_weight * m_prev_position.z() + (1 - m_gps_weight) * pres_position.z();
     pres_position = m_prev_position;
   }
 
@@ -28,9 +28,9 @@ namespace LocalPoseProcessing{
 
   void localPoseProcessing::positionClear()
   {
-    m_prev_position(0) = 0.0;
-    m_prev_position(1) = 0.0;
-    m_prev_position(2) = 0.0;
+    m_prev_position.x() = 0.0;
+    m_prev_position.y() = 0.0;
+    m_prev_position.z() = 0.0;
     m_prev_orientation.w() = 0.0;
     m_prev_orientation.x() = 0.0;
     m_prev_orientation.y() = 0.0;

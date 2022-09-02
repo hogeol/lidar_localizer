@@ -48,9 +48,9 @@ void gpsToUtm()
       tf::Quaternion q;
       q.setRPY(0.0, 0.0, 0.0);
       local_pose.header = gps_in_header;
-      local_pose.pose.position.x = utm_pose(0);
-      local_pose.pose.position.y = utm_pose(1);
-      local_pose.pose.position.z = utm_pose(2);
+      local_pose.pose.position.x = utm_pose.x();
+      local_pose.pose.position.y = utm_pose.y();
+      local_pose.pose.position.z = utm_pose.z();
       local_pose.pose.orientation.w = q.w();
       local_pose.pose.orientation.x = q.x();
       local_pose.pose.orientation.y = q.y();
