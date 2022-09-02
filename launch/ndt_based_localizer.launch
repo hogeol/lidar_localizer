@@ -37,7 +37,7 @@
   <arg name="odom_init_y" default="0.0" />
   <arg name="odom_init_z" default="0.0" />
   <arg name="odom_init_rotation" default="-1.2" />
-  <arg name="sensor_diff_x" default="0.4" />
+  <arg name="sensor_diff_x" default="0.8" />
   <arg name="sensor_diff_y" default="0.0" />
   <arg name="sensor_diff_z" default="0.0" />
     <!-- submap_select 1 is k-nearest search, 0 is radius search-->
@@ -53,7 +53,8 @@
   <arg name="utm_window_size" default="2" />
   
   <!-- ekf arguments -->
-  <arg name="ekf_window_size" default="4" />
+  <arg name="orientation_window_size" default="2" />
+  <arg name="position_window_size" default="4" />
 
   <!-- rviz -->
   <arg name="rviz" default="true" />
@@ -96,6 +97,9 @@
   <param name="odom_init_y" type="double" value="$(arg odom_init_y)" />
   <param name="odom_init_z" type="double" value="$(arg odom_init_z)" />
   <param name="odom_init_rotation" type="double" value="$(arg odom_init_rotation)" />
+  <param name="sensor_diff_x" type="double" value="$(arg sensor_diff_x)" />
+  <param name="sensor_diff_y" type="double" value="$(arg sensor_diff_y)" />
+  <param name="sensor_diff_z" type="double" value="$(arg sensor_diff_z)" />
   <param name="submap_select" type="bool" value="$(arg submap_select)" />
   <param name="kdtree_search_radius" type="double" value="$(arg kdtree_search_radius)" />
   <param name="ndt_near_points" type="int" value="$(arg ndt_near_points)" />
@@ -108,10 +112,8 @@
   <param name="utm_window_size" type="int" value="$(arg utm_window_size)" />
 
   <!-- ekf parameters -->
-  <param name="ekf_window_size" type="int" value="$(arg ekf_window_size)" />
-  <param name="sensor_diff_x" type="double" value="$(arg sensor_diff_x)" />
-  <param name="sensor_diff_y" type="double" value="$(arg sensor_diff_y)" />
-  <param name="sensor_diff_z" type="double" value="$(arg sensor_diff_z)" />
+  <param name="orientation_window_size" type="int" value="$(arg orientation_window_size)" />
+  <param name="position_window_size" type="int" value="$(arg position_window_size)" />
   
   <!-- node -->
   <node pkg="lidar_localizer" type="gps_to_utm_node" name="gps_to_utm_node" output="screen">

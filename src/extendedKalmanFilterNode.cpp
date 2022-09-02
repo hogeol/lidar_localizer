@@ -43,16 +43,14 @@ void ekfProcess()
     if(!ndt_pose_buf.empty()){
       mutex_control.lock();
       ros::Time time_in_ndt = ndt_pose_buf.front()->header.stamp;
-      Eigen::Quaterniond quaternion_in_ndt = Eigen::Quaterniond(ndt_pose_buf.front()->pose.pose.orientation.w, ndt_pose_buf.front()->pose.pose.orientation.x, ndt_pose_buf.front()->pose.pose.orientation.y, ndt_pose_buf.front()->pose.pose.orientation.z);
+      Eigen::Quaterniond orientation_in_ndt = Eigen::Quaterniond(ndt_pose_buf.front()->pose.pose.orientation.w, ndt_pose_buf.front()->pose.pose.orientation.x, ndt_pose_buf.front()->pose.pose.orientation.y, ndt_pose_buf.front()->pose.pose.orientation.z);
       Eigen::Vector3d position_in_ndt = Eigen::Vector3d(ndt_pose_buf.front()->pose.pose.position.x, ndt_pose_buf.front()->pose.pose.position.y, ndt_pose_buf.front()->pose.pose.position.z);
       ndt_pose_buf.pop();
       mutex_control.unlock();
-      Eigen::Matrix4d pose_in_ndt = Eigen::Matrix4d::Identity();
-      Eigen::Matrix4d final_pose = Eigen::Matrix4d::Identity();
-      pose_in_ndt.block<3,3>(0,0) = quaternion_in_ndt.toRotationMatrix();
-      pose_in_ndt(0,3) = position_in_ndt.x();
-      pose_in_ndt(1,3) = position_in_ndt.y();
-      pose_in_ndt(2,3) = position_in_ndt.z();
+      Eigen::Isometry3d pose_in_ndt = Eigen::Isometry3d::Identity();
+      Eigen::Isometry3d final_pose = Eigen::Isometry3d::Identity();
+      pose_in_ndt.linear() = orientation_in_ndt.toRotationMatrix();
+      pose_in_ndt.translation() = position_in_ndt;
       if(position_init == false){
         extended_kalman_filter.setInitPosition(pose_in_ndt);
         position_init = true;
@@ -61,13 +59,13 @@ void ekfProcess()
       extended_kalman_filter.processKalmanFilter(pose_in_ndt, final_pose);
       //printf("\n---\npose:\nx: %.4f\ny: %.4f\nz: %.4f\n---\n", pose_in_ndt(0,3), pose_in_ndt(1,3), pose_in_ndt(2,3));
 
-      Eigen::Quaterniond final_quat(final_pose.block<3,3>(0,0));
+      Eigen::Quaterniond final_quat(final_pose.rotation());
       final_quat.normalize();
 
       //ndt pose transform
       static tf::TransformBroadcaster final_tf_br;
       tf::Transform tf_map_to_final;
-      tf_map_to_final.setOrigin(tf::Vector3(final_pose(0,3), final_pose(1,3), final_pose(2,3)));
+      tf_map_to_final.setOrigin(tf::Vector3(final_pose.translation().x(), final_pose.translation().y(), final_pose.translation().z()));
       tf_map_to_final.setRotation(tf::Quaternion(final_quat.x(), final_quat.y(), final_quat.z(), final_quat.w()));
       final_tf_br.sendTransform(tf::StampedTransform(tf_map_to_final, ros::Time::now(), "map", "final"));
       
@@ -97,15 +95,18 @@ int main(int argc, char** argv)
 
   position_init = false;
 
-  int ekf_window_size = 10;
+  int orientation_window_size = 10;
+  int position_window_size = 10;
 
-  nh.getParam("ekf_window_size", ekf_window_size);
+  nh.getParam("orientation_window_size", orientation_window_size);
+  nh.getParam("position_window_size", position_window_size);
 
+  extended_kalman_filter.correctionInit(orientation_window_size, position_window_size);
+  
   ros::Subscriber ndt_sub = nh.subscribe<nav_msgs::Odometry>("/ndt_pose", 1, ndtCallback);
 
   final_odom_pub = nh.advertise<nav_msgs::Odometry>("/final_odom", 1);
 
-  extended_kalman_filter.correctionInit(ekf_window_size);
   
   std::thread ekfProcessProcessing{ekfProcess};
 

@@ -8,16 +8,16 @@
 namespace ExtendedKalmanFilter{
   class extendedKalmanFilter{
   private:
-    int m_window_size;
-    double m_exponential_weight;
-    Eigen::Matrix4d m_last_pose;
-    Eigen::Quaterniond m_last_orientation;
+    int m_orientation_window_size;
+    int m_position_window_size;
+    double m_orientation_exponential_weight;
+    double m_position_exponential_weight;
+    Eigen::Isometry3d m_last_pose;
   public:
-    void setInitPosition(const Eigen::Matrix4d &pres_pose);
-    void correctionInit(const int &window_size);
-    void processKalmanFilter(const Eigen::Matrix4d &pres_pose, Eigen::Matrix4d &pose_out);
-    void exponentialWeight(const Eigen::Matrix4d &pres_pose);
-    bool angleThreshold(const Eigen::Quaterniond &last_quaternion);
+    void correctionInit(const int &orientation_window_size, const int &position_window_size);
+    void setInitPosition(const Eigen::Isometry3d &pres_pose);
+    void processKalmanFilter(const Eigen::Isometry3d &pres_pose, Eigen::Isometry3d &pose_out);
+    void exponentialWeight(const Eigen::Isometry3d &pres_pose);
       extendedKalmanFilter(void);
   };
 }
