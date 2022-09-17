@@ -10,7 +10,7 @@ https://github.com/geographiclib/geographiclib
 cd
 mkdir libraries
 cd libraries
-git clone --recursive https://github.com/geographiclib/geographiclib
+git clone --recursive https://github.com/geographiclib/geographiclib.git
 cd geographiclib
 mkdir build && cd build
 cmake ../
