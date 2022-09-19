@@ -1,7 +1,6 @@
 #include "gpsToUtm.hpp"
 
 namespace GpsToUtm{
-  
   void gpsToUtm::init(const std::string &hemi, const int &zone)
   {
     m_hemi = hemi;

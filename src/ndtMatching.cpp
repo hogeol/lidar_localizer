@@ -60,7 +60,7 @@ namespace NdtMatching{
     m_ndt->setInputTarget(mp_pcd_map);
   }
 
-  void ndtMatching::processNdt(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Matrix4f &pose_in, Eigen::Matrix4f &pose_out)
+  void ndtMatching::processNdt(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Isometry3d &pose_in, Eigen::Isometry3d &pose_out)
   {
     clock_t start, end;
     //NDT
@@ -76,14 +76,15 @@ namespace NdtMatching{
     
     //In fitness score, lower is better
     m_last_pose = m_ndt->getFinalTransformation();
-
+    
     Eigen::Vector3f ndt_xyz(m_last_pose(0,3), m_last_pose(1,3), m_last_pose(2,3));
-    Eigen::Vector3f gps_in_pose(pose_in(0,3), pose_in(1,3), pose_in(2,3));
-    if(calDistance(gps_in_pose, ndt_xyz) > 0.5 && ndt_score > 0.15){
+    Eigen::Vector3d gps_in_pose(pose_in.translation().x(), pose_in.translation().y(), pose_in.translation().z());
+    
+    if(calDistance(gps_in_pose.cast<float>(), ndt_xyz) > 0.5 && ndt_score > 0.15){
         if(m_local_count % 50 == 0){
-          m_last_pose(0,3) = pose_in(0,3);
-          m_last_pose(1,3) = pose_in(1,3);
-          m_last_pose(2,3) = pose_in(2,3);
+          m_last_pose(0,3) = gps_in_pose.x();
+          m_last_pose(1,3) = gps_in_pose.y();
+          m_last_pose(2,3) = gps_in_pose.z();
           m_local_count = 0;
           mp_pose_inited = false;
         }
@@ -94,7 +95,10 @@ namespace NdtMatching{
       mp_pose_inited = true;
     }
     pcl::transformPointCloud(*pc_in, *pc_out, m_last_pose);
-    pose_out = m_last_pose;    
+    pose_out.translation().x() = m_last_pose(0,3);
+    pose_out.translation().y() = m_last_pose(1,3);
+    pose_out.translation().z() = m_last_pose(2,3);
+    pose_out.linear() = m_last_pose.block<3,3>(0,0).cast<double>();
     sensorTFCorrection(pose_out);
     end = clock();
 
@@ -108,14 +112,13 @@ namespace NdtMatching{
     //printf("\nndt_time: %f", result_time);
   }
 
-  void ndtMatching::sensorTFCorrection(Eigen::Matrix4f &pose_out)
+  void ndtMatching::sensorTFCorrection(Eigen::Isometry3d &pose_out)
   {
     Eigen::Vector4f tf_bias(m_diff_x, m_diff_y, m_diff_z, 1.0);
     tf_bias = m_last_pose * tf_bias;
-    pose_out(0,3) = tf_bias.x();
-    pose_out(1,3) = tf_bias.y();
-    pose_out(2,3) = tf_bias.z();
-    pose_out(3,3) = tf_bias.w();
+    pose_out.translation().x() = tf_bias.x();
+    pose_out.translation().y() = tf_bias.y();
+    pose_out.translation().z() = tf_bias.z();
   }
 
   void ndtMatching::processNdtWithColor(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &pc_out, const Eigen::Matrix4f &pose_in, Eigen::Matrix4f &pose_out)

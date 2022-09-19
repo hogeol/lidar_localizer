@@ -13,10 +13,8 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Odometry.h>
 //tf
-#include <tf/tf.h>
-#include <tf_conversions/tf_eigen.h>
-#include <tf/transform_broadcaster.h>
-#include <tf/transform_datatypes.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
 
 //local lib
 #include "ndtMatching.hpp"
@@ -63,18 +61,16 @@ void finalOdometry()
       //lidar ros to pointcloud
       pcl::fromROSMsg(*lidar_buf.back(), *point_in);
       ros::Time point_in_time = lidar_buf.back()->header.stamp;
-      Eigen::Matrix4d nav_pose = Eigen::Matrix4d::Identity();
+      Eigen::Isometry3d nav_pose = Eigen::Isometry3d::Identity();
       Eigen::Quaterniond local_orientation = Eigen::Quaterniond(filtered_pose_buf.back()->pose.orientation.w, filtered_pose_buf.back()->pose.orientation.x, filtered_pose_buf.back()->pose.orientation.y, filtered_pose_buf.back()->pose.orientation.z); 
-      nav_pose.block<3,3>(0,0) = local_orientation.toRotationMatrix();
-      nav_pose(0,3) = filtered_pose_buf.back()->pose.position.x;
-      nav_pose(1,3) = filtered_pose_buf.back()->pose.position.y;
-      nav_pose(2,3) = filtered_pose_buf.back()->pose.position.z;
+      nav_pose.translation().x() = filtered_pose_buf.back()->pose.position.x;
+      nav_pose.translation().y() = filtered_pose_buf.back()->pose.position.y;
+      nav_pose.translation().z() = filtered_pose_buf.back()->pose.position.z;
+      nav_pose.linear() = local_orientation.toRotationMatrix();
+      
       if(is_init == false){
-        tf::Matrix3x3 tf_rot_matrix;
-        tf::matrixEigenToTF(nav_pose.block<3,3>(0,0), tf_rot_matrix);
-        double roll = 0.0, pitch = 0.0, yaw = 0.0;
-        tf_rot_matrix.getRPY(roll, pitch, yaw);
-        ndt_matching.setInitPosition(nav_pose(0,3), nav_pose(1,3), nav_pose(2,3), yaw);
+        Eigen::Vector3d eigen_rpy = nav_pose.rotation().eulerAngles(0, 1, 2);
+        ndt_matching.setInitPosition(nav_pose.translation().x(), nav_pose.translation().y(), nav_pose.translation().z(), eigen_rpy.z());
         is_init = true;
         filtered_pose_buf.pop();
         lidar_buf.pop();
@@ -88,9 +84,9 @@ void finalOdometry()
       }
       
       //pose after ndt
-      Eigen::Matrix4f ndt_pose = Eigen::Matrix4f::Identity();
-      ndt_matching.processNdt(point_in, point_out, nav_pose.cast<float>(), ndt_pose);
-      Eigen::Quaterniond result_orientation(ndt_pose.block<3,3>(0,0).cast<double>());
+      Eigen::Isometry3d ndt_result_pose = Eigen::Isometry3d::Identity();
+      ndt_matching.processNdt(point_in, point_out, nav_pose, ndt_result_pose);
+      Eigen::Quaterniond result_orientation(ndt_result_pose.rotation());
       result_orientation.normalize();
 
       //pointcloud after ndt
@@ -100,17 +96,21 @@ void finalOdometry()
       ndt_pc_msg.header.frame_id = "map";
       ndt_pc_pub.publish(ndt_pc_msg);
 
-      static tf::TransformBroadcaster ndt_tf_br;
-      tf::Transform tf_map_to_ndt;
-      tf_map_to_ndt.setOrigin(tf::Vector3(ndt_pose(0,3), ndt_pose(1,3), 0.0));
-      tf_map_to_ndt.setRotation(tf::Quaternion(result_orientation.x(), result_orientation.y(), result_orientation.z(), result_orientation.w()));
-      ndt_tf_br.sendTransform(tf::StampedTransform(tf_map_to_ndt, ros::Time::now(), "map", "base_link"));
+      //tf
+      static tf2_ros::TransformBroadcaster ndt_broadcaster;
+      geometry_msgs::TransformStamped ndt_transform_stamped;
 
-      static tf::TransformBroadcaster gps_tf_br;
-      tf::Transform tf_map_to_gps;
-      tf_map_to_gps.setOrigin(tf::Vector3(nav_pose(0,3), nav_pose(1,3), 0.0));
-      tf_map_to_gps.setRotation(tf::Quaternion(local_orientation.x(), local_orientation.y(), local_orientation.z(), local_orientation.w()));
-      gps_tf_br.sendTransform(tf::StampedTransform(tf_map_to_gps, ros::Time::now(), "map", "local"));
+      ndt_transform_stamped.header.stamp = ros::Time::now();
+      ndt_transform_stamped.header.frame_id = "map";
+      ndt_transform_stamped.child_frame_id = "ndt";
+      ndt_transform_stamped.transform.translation.x = ndt_result_pose.translation().x();
+      ndt_transform_stamped.transform.translation.y = ndt_result_pose.translation().y();
+      ndt_transform_stamped.transform.translation.z = ndt_result_pose.translation().z();
+      ndt_transform_stamped.transform.rotation.w = result_orientation.w();
+      ndt_transform_stamped.transform.rotation.x = result_orientation.x();
+      ndt_transform_stamped.transform.rotation.y = result_orientation.y();
+      ndt_transform_stamped.transform.rotation.z = result_orientation.z();
+      ndt_broadcaster.sendTransform(ndt_transform_stamped);
 
       //ndt odometry
       if(ndt_matching.mp_pose_inited == true){
@@ -118,15 +118,16 @@ void finalOdometry()
         ndt_pose_msg.header.stamp = point_in_time;
         ndt_pose_msg.header.frame_id = "map";
         ndt_pose_msg.child_frame_id = "base_link";
-        ndt_pose_msg.pose.pose.position.x = ndt_pose(0,3);
-        ndt_pose_msg.pose.pose.position.y = ndt_pose(1,3);
-        ndt_pose_msg.pose.pose.position.z = ndt_pose(2,3);
+        ndt_pose_msg.pose.pose.position.x = ndt_result_pose.translation().x();
+        ndt_pose_msg.pose.pose.position.y = ndt_result_pose.translation().y();
+        ndt_pose_msg.pose.pose.position.z = ndt_result_pose.translation().z();
         ndt_pose_msg.pose.pose.orientation.w = result_orientation.w();
         ndt_pose_msg.pose.pose.orientation.x = result_orientation.x();
         ndt_pose_msg.pose.pose.orientation.y = result_orientation.y();
         ndt_pose_msg.pose.pose.orientation.z = result_orientation.z();
         ndt_pose_pub.publish(ndt_pose_msg);
       }
+
       //map publish
       if(odom_frame%30 == 0){
         sensor_msgs::PointCloud2 map_msg;
@@ -137,7 +138,7 @@ void finalOdometry()
         odom_frame = 0;
       }
       odom_frame++;
-      double diff = sqrt(pow(ndt_pose(0,3) - nav_pose(0,3), 2) + pow(ndt_pose(1,3) - nav_pose(1,3), 2));
+      double diff = sqrt(pow(ndt_result_pose.translation().x() - nav_pose.translation().x(), 2) + pow(ndt_result_pose.translation().y() - nav_pose.translation().y(), 2));
       printf("\n---\ndiff: %.4f\n---\n", diff);
     }
     std::chrono::milliseconds dura(3);

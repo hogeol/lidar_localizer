@@ -11,9 +11,6 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 //tf
-#include <tf/tf.h>
-#include <tf_conversions/tf_eigen.h>
-#include <tf/transform_broadcaster.h>
 
 #include "extendedKalmanFilter.hpp"
 
@@ -62,11 +59,11 @@ void ekfProcess()
       final_quat.normalize();
 
       //ndt pose transform
-      static tf::TransformBroadcaster final_tf_br;
-      tf::Transform tf_map_to_final;
-      tf_map_to_final.setOrigin(tf::Vector3(final_position.x(), final_position.y(), final_position.z()));
-      tf_map_to_final.setRotation(tf::Quaternion(final_quat.x(), final_quat.y(), final_quat.z(), final_quat.w()));
-      final_tf_br.sendTransform(tf::StampedTransform(tf_map_to_final, ros::Time::now(), "map", "final"));
+      // static tf::TransformBroadcaster final_tf_br;
+      // tf::Transform tf_map_to_final;
+      // tf_map_to_final.setOrigin(tf::Vector3(final_position.x(), final_position.y(), final_position.z()));
+      // tf_map_to_final.setRotation(tf::Quaternion(final_quat.x(), final_quat.y(), final_quat.z(), final_quat.w()));
+      // final_tf_br.sendTransform(tf::StampedTransform(tf_map_to_final, ros::Time::now(), "map", "final"));
       
       //final odometry
       nav_msgs::Odometry final_pose_msg;

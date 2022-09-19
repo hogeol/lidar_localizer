@@ -12,8 +12,8 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   rosbag
   std_msgs
-  tf
-  tf_conversions
+  tf2
+  tf2_ros
   eigen_conversions
   message_generation
   cv_bridge

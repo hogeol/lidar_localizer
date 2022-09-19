@@ -131,21 +131,14 @@
   <node pkg="map_server" name="map_server" type="map_server" args="$(find lidar_localizer)/map/global_map.yaml"/>
   
   <!-- TF -->
-  <node pkg="tf" type="static_transform_publisher" name="baselink2imu" args="0.0 0 0 0 0 0 /base_link /vectornav 10" />
-  <node pkg="tf" type="static_transform_publisher" name="baselink2lidar" args="0.0 0 0 0 0 0 /base_link /velodyne 10" />
-  <node pkg="tf" type="static_transform_publisher" name="baselink2gps" args="0.0 0 0 0 0 0 /base_link /local 10" />
+  <node pkg="tf" type="static_transform_publisher" name="baselink2imu" args="0.0 0.0 0.0 0 0 0 /base_link /vectornav 10" />
+  <node pkg="tf" type="static_transform_publisher" name="baselink2lidar" args="0.0 0.0 0.0 0 0 0 /base_link /velodyne 10" />
+  <node pkg="tf" type="static_transform_publisher" name="baselink2gps" args="0.0 0.0 0.0 0 0 0 /base_link /local 10" />
 
   <!-- ndt trajectory for rviz-->
-  <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="trajectory_server_gps" ns="gt" >
-    <param name="/target_frame_name" value="map" />
-    <param name="/source_frame_name" value="local" />
-    <param name="/trajectory_update_rate" value="10.0" />
-    <param name="/trajectory_publish_rate" value="10.0" />
-  </node>
-  
   <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="trajectory_server_gps" ns="ndt" >
     <param name="/target_frame_name" value="map" />
-    <param name="/source_frame_name" value="base_link" />
+    <param name="/source_frame_name" value="ndt" />
     <param name="/trajectory_update_rate" value="10.0" />
     <param name="/trajectory_publish_rate" value="10.0" />
   </node>
