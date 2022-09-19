@@ -11,6 +11,8 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 //tf
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
 
 #include "extendedKalmanFilter.hpp"
 
@@ -55,16 +57,26 @@ void ekfProcess()
       extended_kalman_filter.processKalmanFilter(pose_in_ndt, final_pose);
 
       Eigen::Vector3d final_position = final_pose.translation();
-      Eigen::Quaterniond final_quat(final_pose.rotation());
-      final_quat.normalize();
+      Eigen::Quaterniond final_orientation(final_pose.rotation());
+      final_orientation.normalize();
 
-      //ndt pose transform
-      // static tf::TransformBroadcaster final_tf_br;
-      // tf::Transform tf_map_to_final;
-      // tf_map_to_final.setOrigin(tf::Vector3(final_position.x(), final_position.y(), final_position.z()));
-      // tf_map_to_final.setRotation(tf::Quaternion(final_quat.x(), final_quat.y(), final_quat.z(), final_quat.w()));
-      // final_tf_br.sendTransform(tf::StampedTransform(tf_map_to_final, ros::Time::now(), "map", "final"));
-      
+      //after kalman filter tf
+      static tf2_ros::TransformBroadcaster final_broadcaster;
+      geometry_msgs::TransformStamped final_transform_stamped;
+
+      final_transform_stamped.header.stamp = ros::Time::now();
+      final_transform_stamped.header.frame_id = "map";
+      final_transform_stamped.child_frame_id = "final";
+      final_transform_stamped.transform.translation.x = final_position.x();
+      final_transform_stamped.transform.translation.y = final_position.y();
+      final_transform_stamped.transform.translation.z = final_position.z();
+      final_transform_stamped.transform.rotation.w = final_orientation.w();
+      final_transform_stamped.transform.rotation.x = final_orientation.x();
+      final_transform_stamped.transform.rotation.y = final_orientation.y();
+      final_transform_stamped.transform.rotation.z = final_orientation.z();
+
+      final_broadcaster.sendTransform(final_transform_stamped);
+
       //final odometry
       nav_msgs::Odometry final_pose_msg;
       final_pose_msg.header.stamp = time_in_ndt;
@@ -73,10 +85,10 @@ void ekfProcess()
       final_pose_msg.pose.pose.position.x = final_position.x();
       final_pose_msg.pose.pose.position.y = final_position.y();
       final_pose_msg.pose.pose.position.z = final_position.z();
-      final_pose_msg.pose.pose.orientation.w = final_quat.w();
-      final_pose_msg.pose.pose.orientation.x = final_quat.x();
-      final_pose_msg.pose.pose.orientation.y = final_quat.y();
-      final_pose_msg.pose.pose.orientation.z = final_quat.z();
+      final_pose_msg.pose.pose.orientation.w = final_orientation.w();
+      final_pose_msg.pose.pose.orientation.x = final_orientation.x();
+      final_pose_msg.pose.pose.orientation.y = final_orientation.y();
+      final_pose_msg.pose.pose.orientation.z = final_orientation.z();
       final_odom_pub.publish(final_pose_msg);
     }
     std::chrono::milliseconds dura(3);

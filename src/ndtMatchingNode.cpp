@@ -86,8 +86,10 @@ void finalOdometry()
       //pose after ndt
       Eigen::Isometry3d ndt_result_pose = Eigen::Isometry3d::Identity();
       ndt_matching.processNdt(point_in, point_out, nav_pose, ndt_result_pose);
-      Eigen::Quaterniond result_orientation(ndt_result_pose.rotation());
-      result_orientation.normalize();
+
+      Eigen::Vector3d ndt_position = ndt_result_pose.translation();
+      Eigen::Quaterniond ndt_orientation(ndt_result_pose.rotation());
+      ndt_orientation.normalize();
 
       //pointcloud after ndt
       sensor_msgs::PointCloud2 ndt_pc_msg;
@@ -103,13 +105,13 @@ void finalOdometry()
       ndt_transform_stamped.header.stamp = ros::Time::now();
       ndt_transform_stamped.header.frame_id = "map";
       ndt_transform_stamped.child_frame_id = "ndt";
-      ndt_transform_stamped.transform.translation.x = ndt_result_pose.translation().x();
-      ndt_transform_stamped.transform.translation.y = ndt_result_pose.translation().y();
-      ndt_transform_stamped.transform.translation.z = ndt_result_pose.translation().z();
-      ndt_transform_stamped.transform.rotation.w = result_orientation.w();
-      ndt_transform_stamped.transform.rotation.x = result_orientation.x();
-      ndt_transform_stamped.transform.rotation.y = result_orientation.y();
-      ndt_transform_stamped.transform.rotation.z = result_orientation.z();
+      ndt_transform_stamped.transform.translation.x = ndt_position.x();
+      ndt_transform_stamped.transform.translation.y = ndt_position.y();
+      ndt_transform_stamped.transform.translation.z = ndt_position.z();
+      ndt_transform_stamped.transform.rotation.w = ndt_orientation.w();
+      ndt_transform_stamped.transform.rotation.x = ndt_orientation.x();
+      ndt_transform_stamped.transform.rotation.y = ndt_orientation.y();
+      ndt_transform_stamped.transform.rotation.z = ndt_orientation.z();
       ndt_broadcaster.sendTransform(ndt_transform_stamped);
 
       //ndt odometry
@@ -118,13 +120,13 @@ void finalOdometry()
         ndt_pose_msg.header.stamp = point_in_time;
         ndt_pose_msg.header.frame_id = "map";
         ndt_pose_msg.child_frame_id = "base_link";
-        ndt_pose_msg.pose.pose.position.x = ndt_result_pose.translation().x();
-        ndt_pose_msg.pose.pose.position.y = ndt_result_pose.translation().y();
-        ndt_pose_msg.pose.pose.position.z = ndt_result_pose.translation().z();
-        ndt_pose_msg.pose.pose.orientation.w = result_orientation.w();
-        ndt_pose_msg.pose.pose.orientation.x = result_orientation.x();
-        ndt_pose_msg.pose.pose.orientation.y = result_orientation.y();
-        ndt_pose_msg.pose.pose.orientation.z = result_orientation.z();
+        ndt_pose_msg.pose.pose.position.x = ndt_position.x();
+        ndt_pose_msg.pose.pose.position.y = ndt_position.y();
+        ndt_pose_msg.pose.pose.position.z = ndt_position.z();
+        ndt_pose_msg.pose.pose.orientation.w = ndt_orientation.w();
+        ndt_pose_msg.pose.pose.orientation.x = ndt_orientation.x();
+        ndt_pose_msg.pose.pose.orientation.y = ndt_orientation.y();
+        ndt_pose_msg.pose.pose.orientation.z = ndt_orientation.z();
         ndt_pose_pub.publish(ndt_pose_msg);
       }
 
