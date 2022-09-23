@@ -50,7 +50,8 @@ void poseCallback(const geometry_msgs::PoseStampedConstPtr &pose_msg)
   mutex_control.unlock();
 }
 
-void finalOdometry()
+int init_cnt = 0;
+void ndtMatching()
 {
   while(1){
     if(!lidar_buf.empty() && !filtered_pose_buf.empty()){
@@ -63,15 +64,17 @@ void finalOdometry()
       ros::Time point_in_time = lidar_buf.back()->header.stamp;
       Eigen::Isometry3d nav_pose = Eigen::Isometry3d::Identity();
       Eigen::Quaterniond local_orientation = Eigen::Quaterniond(filtered_pose_buf.back()->pose.orientation.w, filtered_pose_buf.back()->pose.orientation.x, filtered_pose_buf.back()->pose.orientation.y, filtered_pose_buf.back()->pose.orientation.z); 
+      
       nav_pose.translation().x() = filtered_pose_buf.back()->pose.position.x;
       nav_pose.translation().y() = filtered_pose_buf.back()->pose.position.y;
       nav_pose.translation().z() = filtered_pose_buf.back()->pose.position.z;
       nav_pose.linear() = local_orientation.toRotationMatrix();
       
-      if(is_init == false){
+      if(is_init == false || init_cnt < 30){
         Eigen::Vector3d eigen_rpy = nav_pose.rotation().eulerAngles(0, 1, 2);
         ndt_matching.setInitPosition(nav_pose.translation().x(), nav_pose.translation().y(), nav_pose.translation().z(), eigen_rpy.z());
         is_init = true;
+        init_cnt++;
         filtered_pose_buf.pop();
         lidar_buf.pop();
         mutex_control.unlock();
@@ -98,13 +101,12 @@ void finalOdometry()
       ndt_pc_msg.header.frame_id = "map";
       ndt_pc_pub.publish(ndt_pc_msg);
 
-      //tf
+      //ndt tf
       static tf2_ros::TransformBroadcaster ndt_broadcaster;
       geometry_msgs::TransformStamped ndt_transform_stamped;
-
       ndt_transform_stamped.header.stamp = ros::Time::now();
       ndt_transform_stamped.header.frame_id = "map";
-      ndt_transform_stamped.child_frame_id = "ndt";
+      ndt_transform_stamped.child_frame_id = "base_link";
       ndt_transform_stamped.transform.translation.x = ndt_position.x();
       ndt_transform_stamped.transform.translation.y = ndt_position.y();
       ndt_transform_stamped.transform.translation.z = ndt_position.z();
@@ -114,21 +116,34 @@ void finalOdometry()
       ndt_transform_stamped.transform.rotation.z = ndt_orientation.z();
       ndt_broadcaster.sendTransform(ndt_transform_stamped);
 
+      //utm tf
+      static tf2_ros::TransformBroadcaster utm_br;
+      geometry_msgs::TransformStamped utm_transform_stamped;
+      utm_transform_stamped.header.stamp = ros::Time::now();
+      utm_transform_stamped.header.frame_id = "map";
+      utm_transform_stamped.child_frame_id = "utm";
+      utm_transform_stamped.transform.translation.x = nav_pose.translation().x();
+      utm_transform_stamped.transform.translation.y = nav_pose.translation().y();
+      utm_transform_stamped.transform.translation.z = nav_pose.translation().z();
+      utm_transform_stamped.transform.rotation.w = local_orientation.w();
+      utm_transform_stamped.transform.rotation.x = local_orientation.x();
+      utm_transform_stamped.transform.rotation.y = local_orientation.y();
+      utm_transform_stamped.transform.rotation.z = local_orientation.z();
+      utm_br.sendTransform(utm_transform_stamped);
+
       //ndt odometry
-      if(ndt_matching.mp_pose_inited == true){
-        nav_msgs::Odometry ndt_pose_msg;
-        ndt_pose_msg.header.stamp = point_in_time;
-        ndt_pose_msg.header.frame_id = "map";
-        ndt_pose_msg.child_frame_id = "base_link";
-        ndt_pose_msg.pose.pose.position.x = ndt_position.x();
-        ndt_pose_msg.pose.pose.position.y = ndt_position.y();
-        ndt_pose_msg.pose.pose.position.z = ndt_position.z();
-        ndt_pose_msg.pose.pose.orientation.w = ndt_orientation.w();
-        ndt_pose_msg.pose.pose.orientation.x = ndt_orientation.x();
-        ndt_pose_msg.pose.pose.orientation.y = ndt_orientation.y();
-        ndt_pose_msg.pose.pose.orientation.z = ndt_orientation.z();
-        ndt_pose_pub.publish(ndt_pose_msg);
-      }
+      nav_msgs::Odometry ndt_pose_msg;
+      ndt_pose_msg.header.stamp = point_in_time;
+      ndt_pose_msg.header.frame_id = "map";
+      ndt_pose_msg.child_frame_id = "base_link";
+      ndt_pose_msg.pose.pose.position.x = ndt_position.x();
+      ndt_pose_msg.pose.pose.position.y = ndt_position.y();
+      ndt_pose_msg.pose.pose.position.z = ndt_position.z();
+      ndt_pose_msg.pose.pose.orientation.w = ndt_orientation.w();
+      ndt_pose_msg.pose.pose.orientation.x = ndt_orientation.x();
+      ndt_pose_msg.pose.pose.orientation.y = ndt_orientation.y();
+      ndt_pose_msg.pose.pose.orientation.z = ndt_orientation.z();
+      ndt_pose_pub.publish(ndt_pose_msg);
 
       //map publish
       if(odom_frame%30 == 0){
@@ -211,7 +226,7 @@ int main(int argc, char** argv)
   ndt_pc_pub = nh.advertise<sensor_msgs::PointCloud2>("/ndt", 1);
   ndt_pose_pub = nh.advertise<nav_msgs::Odometry>("/ndt_pose", 1);
 
-  std::thread finalOdometryProcess{finalOdometry};
+  std::thread ndtMatchingProcess{ndtMatching};
 
   ros::spin();
 

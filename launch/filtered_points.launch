@@ -8,12 +8,12 @@
   <arg name="vertical_resolution" default="0.33" />
   <arg name="filtering_leaf_size" default="0.2" />
     <!-- <arg name="pcd_map_name" default="dlo_map.pcd" /> -->
-  <arg name="robot_x_min" default="-2.0" />
-  <arg name="robot_x_max" default="2.0" />
-  <arg name="robot_y_min" default="-0.1" />
-  <arg name="robot_y_max" default="0.1" />
-  <arg name="robot_z_min" default="-1.0" />
-  <arg name="robot_z_max" default="1.0" />
+  <arg name="robot_x_min" default="0.0" />
+  <arg name="robot_x_max" default="0.0" />
+  <arg name="robot_y_min" default="-10.0" />
+  <arg name="robot_y_max" default="10.0" />
+  <arg name="robot_z_min" default="0.0" />
+  <arg name="robot_z_max" default="0.0" />
   
   <!-- rviz -->
   <arg name="rviz" default="true" />
@@ -37,6 +37,8 @@
 
   <!-- node -->
   <node pkg="lidar_localizer" type="lidar_processing_node" name="lidar_processing_node" output="screen">
+  </node>
+  <node pkg="lidar_localizer" type="lane_detection_node" name="lane_detection_node" output="screen">
   </node>
 
   <group if="$(arg rviz)">

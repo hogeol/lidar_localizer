@@ -92,6 +92,18 @@ target_link_libraries(lidar_processing_node
   ${PCL_LIBRARIES}
 )
 
+#lane detection node
+add_executable(lane_detection_node
+src/range.cpp
+src/lidar.cpp
+src/laneDetection.cpp
+src/laneDetectionNode.cpp
+)
+target_link_libraries(lane_detection_node
+  ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
+)
+
 #imu pre-filtering node
 add_executable(
 local_pose_processing_node
@@ -114,6 +126,17 @@ target_link_libraries(ndt_matching_node
   ${PCL_LIBRARIES}
   ${EIGEN3_LIBRARIES}
   pcl_omp
+)
+
+#exponential weight filter node
+add_executable(
+  exponential_weight_filter_node
+  src/exponentialWeightFilter.cpp
+  src/exponentialWeightFilterNode.cpp
+)
+target_link_libraries(exponential_weight_filter_node
+  ${catkin_LIBRARIES}
+  ${EIGEN3_LIBRARIES}
 )
 
 #kalman filter node (final odometry)

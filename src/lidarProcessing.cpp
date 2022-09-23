@@ -11,35 +11,11 @@ namespace LidarProcessing{
     m_leaf_size = downsampling_size;
   }
 
-  void lidarProcessingClass::setRobot(const double &x_min, const double &x_max, const double &y_min, const double &y_max, const double &z_min , const double &z_max)
-  {
-    m_robot_info.setRobotX(x_min, x_max);
-    m_robot_info.setRobotY(y_min, y_max);
-    m_robot_info.setRobotZ(z_min, z_max);
-  }
-
   void lidarProcessingClass::featureExtraction(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out)
   { 
     //remove NaN points
     std::vector<int> nan_idx;
     pcl::removeNaNFromPointCloud<pcl::PointXYZI>(*pc_in, *pc_in, nan_idx);
-
-    ////passthrough filter
-    // pcl::PointCloud<pcl::PointXYZI>::Ptr x_ptf_out(new pcl::PointCloud<pcl::PointXYZI>());
-    // pcl::PointCloud<pcl::PointXYZI>::Ptr y_ptf_out(new pcl::PointCloud<pcl::PointXYZI>());
-    // pcl::PassThrough<pcl::PointXYZI>::Ptr pass_through(new pcl::PassThrough<pcl::PointXYZI>());
-    // pass_through->setInputCloud(pc_in);
-    
-    // pass_through->setFilterFieldName("x");
-    // pass_through->setFilterLimits(m_robot_info.m_robot_x_min, m_robot_info.m_robot_x_max);
-    // pass_through->setFilterLimitsNegative(true);
-    // pass_through->filter(*x_ptf_out);
-
-    // pass_through->setInputCloud(x_ptf_out);
-    // pass_through->setFilterFieldName("y");
-    // pass_through->setFilterLimits(m_robot_info.m_robot_y_min, m_robot_info.m_robot_y_max);
-    // pass_through->setFilterLimitsNegative(true);
-    // pass_through->filter(*y_ptf_out);
 
     //downsampling
     pcl::PointCloud<pcl::PointXYZI>::Ptr down_sampling_out(new pcl::PointCloud<pcl::PointXYZI>());
@@ -99,10 +75,9 @@ namespace LidarProcessing{
   void lidarProcessingClass::distanceFilter(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out)
   {
     pc_out->clear();
-    pcl::PointCloud<pcl::PointXYZI>::Ptr after_distance(new pcl::PointCloud<pcl::PointXYZI>());
     pcl::PointXYZI pc_out_tmp;
     int input_point_size = pc_in->points.size();
-    for(int point_iter=0; point_iter<input_point_size; point_iter++){
+    for(int point_iter=0; point_iter < input_point_size; point_iter++){
       const auto &pt_iter = pc_in->points[point_iter];
       if(sqrt(pow(pt_iter.x,2)+pow(pt_iter.y,2)+pow(pt_iter.z,2))>= m_lidar_info.m_min_dis && sqrt(pow(pt_iter.x,2)+pow(pt_iter.y,2)+pow(pt_iter.z,2))<=m_lidar_info.m_max_dis){
         pc_out_tmp.x = pt_iter.x;
@@ -131,29 +106,8 @@ namespace LidarProcessing{
     }
   }
   
-  void robotDimension::setRobotX(const double &robot_x_min, const double &robot_x_max)
-  {
-    m_robot_x_min = robot_x_min;
-    m_robot_x_max = robot_x_max;
-  }
-  
-  void robotDimension::setRobotY(const double &robot_y_min, const double &robot_y_max)
-  {
-    m_robot_y_min = robot_y_min;
-    m_robot_y_max = robot_y_max;
-  }
-
-  void robotDimension::setRobotZ(const double &robot_z_min, const double &robot_z_max)
-  {
-    m_robot_z_min = robot_z_min;
-    m_robot_z_max = robot_z_max;
-  }
 
   lidarProcessingClass::lidarProcessingClass(void)
-  {
-  }
-
-  robotDimension::robotDimension(void)
   {
   }
 }

@@ -11,25 +11,27 @@
 
   <!-- lidar filtering arguments -->
   <arg name="laser_topic" default="/velodyne_points" />
-  <arg name="scan_line" default="32" />
+  <arg name="scan_line" default="16" />
   <arg name="max_distance" default="200.0" />
-  <arg name="min_distance" default="0.2" />
+  <arg name="min_distance" default="0.0" />
   <arg name="vertical_resolution" default="0.33" />
   <arg name="filtering_leaf_size" default="1.5" />
-  <arg name="robot_x_min" default="-0.0" />
-  <arg name="robot_x_max" default="0.0" />
-  <arg name="robot_y_min" default="-0.0" />
-  <arg name="robot_y_max" default="0.0" />
-  <arg name="robot_z_min" default="-0.0" />
-  <arg name="robot_z_max" default="0.0" />
+  
+  <!-- lane detection arguments -->
+  <arg name="range_x_min" default="0.0" />
+  <arg name="range_x_max" default="0.0" />
+  <arg name="range_y_min" default="-10.0" />
+  <arg name="range_y_max" default="10.0" />
+  <arg name="range_z_min" default="-0.0" />
+  <arg name="range_z_max" default="0.0" />
 
   <!-- ndt arguments -->
   <arg name="pcd_map_resolution" default="1.5" />
   <arg name="pcd_map_path" default="$(find lidar_localizer)/map/" />
   <arg name="pcd_map_name" default="leaf_0.0001.pcd" />
     <!-- map transform matrix info if needed-->
-  <arg name="map_translation_x" default="0.13" />
-  <arg name="map_translation_y" default="-0.54" />
+  <arg name="map_translation_x" default="0" />
+  <arg name="map_translation_y" default="0.0" />
   <arg name="map_translation_z" default="0.0" />
   <arg name="map_rotation_theta" default="0.0" />
   <arg name="user_init_pose" default="false" />
@@ -37,15 +39,15 @@
   <arg name="odom_init_y" default="0.0" />
   <arg name="odom_init_z" default="0.0" />
   <arg name="odom_init_rotation" default="-1.2" />
-  <arg name="sensor_diff_x" default="0.8" />
+  <arg name="sensor_diff_x" default="0.2" />
   <arg name="sensor_diff_y" default="0.0" />
   <arg name="sensor_diff_z" default="0.0" />
     <!-- submap_select 1 is k-nearest search, 0 is radius search-->
   <arg name="submap_select" default="1" />
   <arg name="kdtree_search_radius" default="200.0" />
   <arg name="ndt_near_points" default="400000" />
-  <arg name="ndt_max_iteration" default="50" />
-  <arg name="ndt_max_threads" default="15" />
+  <arg name="ndt_max_iteration" default="100" />
+  <arg name="ndt_max_threads" default="10" />
 
   <!-- imu and utm arguments-->
   <arg name="imu_topic" default="/vectornav/IMU" />
@@ -53,8 +55,8 @@
   <arg name="utm_window_size" default="2" />
   
   <!-- ekf arguments -->
-  <arg name="orientation_window_size" default="2" />
-  <arg name="position_window_size" default="4" />
+  <arg name="weight_orientation_window_size" default="2" />
+  <arg name="weight_position_window_size" default="4" />
 
   <!-- rviz -->
   <arg name="rviz" default="true" />
@@ -77,12 +79,14 @@
   <param name="min_distance" type="double" value="$(arg min_distance)" />
   <param name="vertical_angle" type="double" value="$(arg vertical_resolution)" />
   <param name="filtering_leaf_size" type="double" value="$(arg filtering_leaf_size)" />
-  <param name="robot_x_min" type="double" value="$(arg robot_x_min)" />
-  <param name="robot_x_max" type="double" value="$(arg robot_x_max)" />
-  <param name="robot_y_min" type="double" value="$(arg robot_y_min)" />
-  <param name="robot_y_max" type="double" value="$(arg robot_y_max)" />
-  <param name="robot_z_min" type="double" value="$(arg robot_z_min)" />
-  <param name="robot_z_max" type="double" value="$(arg robot_z_max)" />
+
+  <!-- lane detection parameters -->
+  <param name="range_x_min" type="double" value="$(arg range_x_min)" />
+  <param name="range_x_max" type="double" value="$(arg range_x_max)" />
+  <param name="range_y_min" type="double" value="$(arg range_y_min)" />
+  <param name="range_y_max" type="double" value="$(arg range_y_max)" />
+  <param name="range_z_min" type="double" value="$(arg range_z_min)" />
+  <param name="range_z_max" type="double" value="$(arg range_z_max)" />
 
   <!-- ndt parameters -->
   <param name="pcd_map_resolution" type="double" value="$(arg pcd_map_resolution)" />
@@ -112,19 +116,21 @@
   <param name="utm_window_size" type="int" value="$(arg utm_window_size)" />
 
   <!-- ekf parameters -->
-  <param name="orientation_window_size" type="int" value="$(arg orientation_window_size)" />
-  <param name="position_window_size" type="int" value="$(arg position_window_size)" />
+  <param name="weight_orientation_window_size" type="int" value="$(arg weight_orientation_window_size)" />
+  <param name="weight_position_window_size" type="int" value="$(arg weight_position_window_size)" />
   
   <!-- node -->
   <node pkg="lidar_localizer" type="gps_to_utm_node" name="gps_to_utm_node" output="screen">
   </node>
   <node pkg="lidar_localizer" type="lidar_processing_node" name="lidar_processing_node" output="screen">
   </node>
+  <node pkg="lidar_localizer" type="lane_detection_node" name="lane_detection_node" output="screen">
+  </node>
   <node pkg="lidar_localizer" type="local_pose_processing_node" name="local_pose_processing_node" output="screen">
   </node>
   <node pkg="lidar_localizer" type="ndt_matching_node" name="ndt_matching_node" output="screen">
   </node>
-  <node pkg="lidar_localizer" type="extended_kalman_filter_node" name="extended_kalman_filter_node" output="screen">
+  <node pkg="lidar_localizer" type="exponential_weight_filter_node" name="exponential_weight_filter_node" output="screen">
   </node>
 
   <!-- HD map load-->
@@ -133,12 +139,12 @@
   <!-- TF -->
   <node pkg="tf" type="static_transform_publisher" name="baselink2imu" args="0.0 0.0 0.0 0 0 0 /base_link /vectornav 10" />
   <node pkg="tf" type="static_transform_publisher" name="baselink2lidar" args="0.0 0.0 0.0 0 0 0 /base_link /velodyne 10" />
-  <node pkg="tf" type="static_transform_publisher" name="baselink2gps" args="0.0 0.0 0.0 0 0 0 /base_link /local 10" />
+  <!-- <node pkg="tf" type="static_transform_publisher" name="baselink2gps" args="0.0 0.0 0.0 0 0 0 /base_link /utm 10" /> -->
 
   <!-- ndt trajectory for rviz-->
   <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="trajectory_server_gps" ns="ndt" >
     <param name="/target_frame_name" value="map" />
-    <param name="/source_frame_name" value="ndt" />
+    <param name="/source_frame_name" value="base_link" />
     <param name="/trajectory_update_rate" value="10.0" />
     <param name="/trajectory_publish_rate" value="10.0" />
   </node>
@@ -146,6 +152,13 @@
   <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="trajectory_server_ndt" ns="final" >
     <param name="/target_frame_name" value="map" />
     <param name="/source_frame_name" value="final" />
+    <param name="/trajectory_update_rate" value="10.0" />
+    <param name="/trajectory_publish_rate" value="10.0" />
+  </node>
+
+  <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="trajectory_server_ndt" ns="utm" >
+    <param name="/target_frame_name" value="map" />
+    <param name="/source_frame_name" value="utm" />
     <param name="/trajectory_update_rate" value="10.0" />
     <param name="/trajectory_publish_rate" value="10.0" />
   </node>
