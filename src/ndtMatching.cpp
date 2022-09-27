@@ -50,9 +50,9 @@ namespace NdtMatching{
     //transform if UTM coordinate is not provided in mapping (lotation is only z-axis based)
     pcdMapTransform(map_after_downsampling_pcd);
     m_kd_tree->setInputCloud(mp_pcd_map);
-    m_ndt->setTransformationEpsilon(0.001);
+    m_ndt->setTransformationEpsilon(0.05);
     m_ndt->setStepSize(0.1);
-    m_ndt->setResolution(3.0);
+    m_ndt->setResolution(4.0);
     //m_ndt->setNumThreads(omp_get_max_threads());
     m_ndt->setNumThreads(ndt_threads);
     m_ndt->setMaximumIterations(max_iter);
@@ -70,10 +70,10 @@ namespace NdtMatching{
     m_ndt->align(*aligned_pcd, m_last_pose);
     //m_ndt->align(*aligned_pcd);
     double ndt_score =  m_ndt->getFitnessScore();
-    if(m_ndt->hasConverged())
+    if(m_ndt->hasConverged()){
       //printf("--\nscore: %.4f, iteration: %d\n---\n", ndt_score, m_ndt->getFinalNumIteration());
-
-    //In fitness score, lower is better
+          //In fitness score, lower is better
+    }
     m_last_pose = m_ndt->getFinalTransformation();
     
     Eigen::Vector3f ndt_xyz(m_last_pose(0,3), m_last_pose(1,3), m_last_pose(2,3));
@@ -90,7 +90,7 @@ namespace NdtMatching{
         //printf("\nlocal_count: %d\n", m_local_count);
     }
     
-    pcl::transformPointCloud(*pc_in, *pc_out, m_last_pose);
+    //pcl::transformPointCloud(*pc_in, *pc_out, m_last_pose);
     pose_out.translation().x() = m_last_pose(0,3);
     pose_out.translation().y() = m_last_pose(1,3);
     pose_out.translation().z() = m_last_pose(2,3);
@@ -105,7 +105,7 @@ namespace NdtMatching{
     //   printf("\n");
     // }
     double result_time = (double)(end - start)/CLOCKS_PER_SEC;
-    //printf("\nndt_time: %f", result_time);
+    //printf("\nndt_time: %f", result_time); 
   }
 
   void ndtMatching::sensorTFCorrection(Eigen::Isometry3d &pose_out)

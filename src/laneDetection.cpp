@@ -1,3 +1,4 @@
+#define _USE_MATH_DEFINES_
 #include "laneDetection.hpp"
 
 namespace LaneDetection{
@@ -22,6 +23,11 @@ namespace LaneDetection{
     //printf("\nfiltered range: %.4f, %.4f\n", m_range_info.mp_range_left, m_range_info.mp_range_right);
     pass_through_filter.setFilterLimitsNegative(false);
     pass_through_filter.filter(*after_ptf);
+    pass_through_filter.setInputCloud(after_ptf);
+    pass_through_filter.setFilterFieldName("x");
+    pass_through_filter.setFilterLimits(m_range_info.mp_range_front, m_range_info.mp_range_back);
+    pass_through_filter.setFilterLimitsNegative(false);
+    pass_through_filter.filter(*after_ptf);
     filteringIntensity(after_ptf, pc_out);
   }
 
@@ -29,15 +35,30 @@ namespace LaneDetection{
   {
     pc_out->clear();
     int point_size = pc_in->points.size();
-    pcl::PointXYZI pc_in_points_tmp;
+    double min_z = 0.0;
+    double min_intensity = 255.0;
+    pcl::PointXYZI pt_xyzi;
     for(int point_iter = 0; point_iter < point_size; point_iter++){
       const auto &pc_in_tmp = pc_in->points[point_iter];
-      pc_in_points_tmp.x = pc_in_tmp.x;
-      pc_in_points_tmp.y = pc_in_tmp.y;
-      pc_in_points_tmp.z = pc_in_tmp.z;
-      pc_in_points_tmp.intensity = pc_in_tmp.intensity;
-      if(pc_in_points_tmp.intensity < 50){
-        pc_out->points.emplace_back(pc_in_points_tmp);
+      pt_xyzi.x = pc_in_tmp.x;
+      pt_xyzi.y = pc_in_tmp.y;
+      pt_xyzi.z = pc_in_tmp.z;
+      pt_xyzi.intensity = pc_in_tmp.intensity;
+      if(min_z > pt_xyzi.z){
+        min_z = pt_xyzi.z;
+      }
+      if(min_intensity > pt_xyzi.intensity){
+        min_intensity = pt_xyzi.intensity;
+      }
+    }
+    for(int pt_iter; pt_iter < point_size; pt_iter++){
+      const auto &pc_in_pt = pc_in->points[pt_iter];
+      pt_xyzi.x = pc_in_pt.x;
+      pt_xyzi.y = pc_in_pt.y;
+      pt_xyzi.z = pc_in_pt.z;
+      pt_xyzi.intensity = pc_in_pt.intensity;
+      if(std::abs(pt_xyzi.z - min_z) < 1.0){
+        pc_out->emplace_back(pt_xyzi);
       }
     }
   }

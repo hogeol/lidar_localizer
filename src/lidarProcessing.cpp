@@ -24,22 +24,6 @@ namespace LidarProcessing{
     avg_filter->setLeafSize(m_leaf_size, m_leaf_size, m_leaf_size);
     //avg_filter.filter(*down_sampling_out);
     avg_filter->filter(*down_sampling_out);
-   
-    //indices filter remove noise
-    // pcl::PointCloud<pcl::PointXYZI>::Ptr rm_noise_out(new pcl::PointCloud<pcl::PointXYZI>());
-    // pcl::PointCloud<pcl::PointXYZI>::iterator pc_in_iter = pc_in->begin();
-    // pcl::PointIndices::Ptr noise(new pcl::PointIndices());
-    // pcl::ExtractIndices<pcl::PointXYZI> ext;
-    // ext.setInputCloud(down_sampling_out);
-    // for(int index_iter=0; pc_in_iter!=pc_in->end(); index_iter++, pc_in_iter++){
-    //   if(pc_in_iter->intensity == 255.0){
-    //     noise->indices.emplace_back(index_iter);
-    //   }
-    // }
-    // ext.setIndices(noise);
-    // ext.setNegative(true);
-    // //ext.filter(*rm_noise_out);
-    // ext.filter(*pc_out);
     
     //statistical outrier removal
     int num_neighbor_points = 20;
