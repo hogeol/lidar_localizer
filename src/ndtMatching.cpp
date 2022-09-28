@@ -25,7 +25,7 @@ namespace NdtMatching{
     m_diff_z = diff_z;
   }
 
-  void ndtMatching::init(const double &map_resolution, const std::string &map_path, const std::string &map_name, const bool &submap_select, const double &search_radius, const int & near_points, const int &max_iter, const int &ndt_threads)
+  void ndtMatching::init(const double &map_resolution, const std::string &map_path, const std::string &map_name, const bool &submap_select, const double &search_radius, const int & near_points, const int &max_iter, const int &ndt_threads, const std::string &ndt_search_method)
   {
     m_local_count = 0;
     m_map_resolution = map_resolution;
@@ -57,6 +57,17 @@ namespace NdtMatching{
     m_ndt->setNumThreads(ndt_threads);
     m_ndt->setMaximumIterations(max_iter);
     m_ndt->setInputTarget(mp_pcd_map);
+    if(ndt_search_method == "KDTREE"){
+      m_ndt->setNeighborhoodSearchMethod(pclomp::KDTREE);
+    }
+    else if(ndt_search_method == "DIRECT7"){
+      m_ndt->setNeighborhoodSearchMethod(pclomp::DIRECT7);
+    }
+    else if(ndt_search_method == "DIRECT1"){
+      m_ndt->setNeighborhoodSearchMethod(pclomp::DIRECT1);
+    }
+    else{
+    }
   }
 
   void ndtMatching::processNdt(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Isometry3d &pose_in, Eigen::Isometry3d &pose_out)

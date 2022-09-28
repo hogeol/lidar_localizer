@@ -48,6 +48,7 @@
   <arg name="ndt_near_points" default="400000" />
   <arg name="ndt_max_iteration" default="1000" />
   <arg name="ndt_max_threads" default="5" />
+  <arg name="ndt_search_method" default="DIRECT7" />
 
   <!-- imu and utm arguments-->
   <arg name="imu_topic" default="/vectornav/IMU" />
@@ -109,6 +110,7 @@
   <param name="ndt_near_points" type="int" value="$(arg ndt_near_points)" />
   <param name="ndt_max_iteration" type="int" value="$(arg ndt_max_iteration)" />
   <param name="ndt_max_threads" type="int" value="$(arg ndt_max_threads)" />
+  <param name="ndt_search_method" type="string" value="$(arg ndt_search_method)" />
 
   <!-- imu and utm parameters-->
   <param name="imu_topic" type="string" value="$(arg imu_topic)" />

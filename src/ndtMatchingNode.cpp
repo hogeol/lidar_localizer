@@ -189,6 +189,7 @@ int main(int argc, char** argv)
   is_init = false;
   std::string pcd_map_path = "/home/a/ace_ws/src/velodyne_ndt/map/";
   std::string pcd_map_name = "map.pcd";
+  std::string ndt_search_method = "pclomp::DIRECT7";
 
   nh.getParam("pcd_map_resolution", pcd_map_resolution);
   nh.getParam("pcd_map_path", pcd_map_path);
@@ -210,13 +211,14 @@ int main(int argc, char** argv)
   nh.getParam("ndt_near_points", ndt_near_points);
   nh.getParam("ndt_max_iteration", ndt_max_iteration);
   nh.getParam("ndt_max_threads", ndt_max_threads);
+  nh.getParam("ndt_search_method", ndt_search_method);
   
   ndt_matching.setMapTransformInfo(map_rotation_theta, map_translation_x, map_translation_y, map_translation_z);
   if(is_init == true){
     ROS_INFO("\n-----User init pose-----\n");
     ndt_matching.setInitPosition(odom_init_x, odom_init_y, odom_init_z, odom_init_rotation);
   }
-  ndt_matching.init(pcd_map_resolution, pcd_map_path, pcd_map_name, submap_select, search_radius, ndt_near_points, ndt_max_iteration, ndt_max_threads);
+  ndt_matching.init(pcd_map_resolution, pcd_map_path, pcd_map_name, submap_select, search_radius, ndt_near_points, ndt_max_iteration, ndt_max_threads, ndt_search_method);
   ndt_matching.setGpsLidarTF(sensor_diff_x, sensor_diff_y, sensor_diff_z);
 
   ros::Subscriber filtered_lidar_sub = nh.subscribe<sensor_msgs::PointCloud2>("/filtered_point", 1, lidarHandler);
