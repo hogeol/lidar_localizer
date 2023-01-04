@@ -20,7 +20,7 @@ sudo make install
 
 > In arguments ndt_max_thread
 
-more thread is not always good results.
+more thread is not always good results
 In my case, CPU i7-12700KF have 20-threads
 but, Compare between thread 10 and 5, 5 is better in my environment
 Please find your best threads through experience
