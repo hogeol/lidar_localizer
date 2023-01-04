@@ -23,4 +23,4 @@ sudo make install
 more thread is not always good results.
 In my case, CPU i7-12700KF have 20-threads
 but, Compare between thread 10 and 5, 5 is better in my environment
-Plz find your best threads through experience
+Please find your best threads through experience
