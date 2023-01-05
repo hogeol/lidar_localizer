@@ -6,24 +6,23 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 //ros
-#include <ros/ros.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <sensor_msgs/NavSatFix.h>
-#include <std_msgs/Header.h>
-#include <tf/tf.h>
+#include <rclcpp/rclcpp.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <sensor_msgs/msg/nav_sat_fix.hpp>
+#include <std_msgs/msg/header.hpp>
 //local lib
 #include "gpsToUtm.hpp"
 
 //publisher
-ros::Publisher utm_pub;
+rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr utm_pub;
 
-std::queue<sensor_msgs::NavSatFixConstPtr> gps_buf;
+std::queue<sensor_msgs::msg::NavSatFix::ConstPtr> gps_buf;
 
 std::mutex mutex_control;
 
 GpsToUtm::gpsToUtm gpsToUtmClass;
 
-void gpsCallback(const sensor_msgs::NavSatFixConstPtr& gps_msg)
+void gpsCallback(const sensor_msgs::msg::NavSatFix::ConstPtr& gps_msg)
 {
   mutex_control.lock();
   gps_buf.push(gps_msg);
@@ -35,7 +34,7 @@ void gpsToUtm()
   while(1){
     if(!gps_buf.empty()){
       mutex_control.lock();
-      std_msgs::Header gps_in_header = gps_buf.front()->header;
+      std_msgs::msg::Header gps_in_header = gps_buf.front()->header;
       double latitude = gps_buf.front()->latitude;
       double longitude = gps_buf.front()->longitude;
       double altitude = gps_buf.front()->altitude;
@@ -44,18 +43,18 @@ void gpsToUtm()
       Eigen::Vector3d utm_pose;
       gpsToUtmClass.gpsConvertToUtm(latitude, longitude, altitude, utm_pose);
         
-      geometry_msgs::PoseStamped local_pose;
-      tf::Quaternion q;
-      q.setRPY(0.0, 0.0, 0.0);
+      geometry_msgs::msg::PoseStamped local_pose;
+      Eigen::Matrix3d local_rpy = Eigen::Matrix3d::Identity();
+      Eigen::Quaterniond local_quat{local_rpy};
       local_pose.header = gps_in_header;
       local_pose.pose.position.x = utm_pose.x();
       local_pose.pose.position.y = utm_pose.y();
       local_pose.pose.position.z = utm_pose.z();
-      local_pose.pose.orientation.w = q.w();
-      local_pose.pose.orientation.x = q.x();
-      local_pose.pose.orientation.y = q.y();
-      local_pose.pose.orientation.z = q.z();
-      utm_pub.publish(local_pose);
+      local_pose.pose.orientation.w = local_quat.w();
+      local_pose.pose.orientation.x = local_quat.x();
+      local_pose.pose.orientation.y = local_quat.y();
+      local_pose.pose.orientation.z = local_quat.z();
+      utm_pub -> publish(local_pose);
     }
     std::chrono::milliseconds dura(3);
     std::this_thread::sleep_for(dura);
@@ -64,9 +63,8 @@ void gpsToUtm()
 
 int main(int argc, char **argv)
 {
-  ros::init(argc,argv,"gpsToUtm");
-
-  ros::NodeHandle nh;
+  rclcpp::init(argc, argv);
+  rclcpp::Node::SharedPtr nh;
   
   std::string hemisphere = "North";
   std::string gps_topic = "fix";
@@ -74,35 +72,44 @@ int main(int argc, char **argv)
   double offset_y=0;
   double offset_z=0;
   int utm_zone=52;
-  ROS_INFO("You can find utm zone at https://mangomap.com/robertyoung/maps/69585/what-utm-zone-am-i-in-#");
+  
+  RCLCPP_INFO(nh->get_logger(), "You can find utm zone at https://mangomap.com/robertyoung/maps/69585/what-utm-zone-am-i-in-#");
 
-
-  if(nh.getParam("hemisphere",hemisphere)){
-    ROS_INFO("North hemisphere or south hemisphere? %s ",hemisphere.c_str());
+  if(nh -> get_parameter("hemisphere",hemisphere)){
+    
+    RCLCPP_INFO(nh->get_logger(), "North hemisphere or south hemisphere? %s ",hemisphere.c_str());
     if(hemisphere != "North" && hemisphere != "South"){
-      ROS_ERROR("hemisphere only can equal to North or South!");
+      RCLCPP_INFO(nh->get_logger(), "hemisphere only can equal to North or South!");
     }
   }
   else{
-    ROS_WARN("You need to specify you are in the north or south hemisphere. Default north");
+    RCLCPP_WARN(nh->get_logger(), "You need to specify you are in the north or south hemisphere. Default north");
     hemisphere = "North";
   }
+  nh -> declare_parameter("utm_zone", 52);
+  nh -> declare_parameter("gps_topic", "fix");
+  nh -> declare_parameter("gps_offset_x", 0);
+  nh -> declare_parameter("gps_offset_y", 0);
+  nh -> declare_parameter("gps_offset_z", 0);
 
-  nh.getParam("utm_zone", utm_zone);
-  nh.getParam("gps_topic", gps_topic);
-  nh.getParam("gps_offset_x", offset_x);
-  nh.getParam("gps_offset_y", offset_y);
-  nh.getParam("gps_offset_z", offset_z);
+  nh -> get_parameter("utm_zone", utm_zone);
+  nh -> get_parameter("gps_topic", gps_topic);
+  nh -> get_parameter("gps_offset_x", offset_x);
+  nh -> get_parameter("gps_offset_y", offset_y);
+  nh -> get_parameter("gps_offset_z", offset_z);
   
   gpsToUtmClass.init(hemisphere, utm_zone);
   gpsToUtmClass.setGpsOffset(offset_x, offset_y, offset_z);
 
-  ros::Subscriber gps_sub = nh.subscribe(gps_topic,1 ,gpsCallback);
+  rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gps_sub{nh -> create_subscription<sensor_msgs::msg::NavSatFix>(gps_topic, 1, gpsCallback)};
 
-  utm_pub = nh.advertise<geometry_msgs::PoseStamped>("/utm", 1);
+  utm_pub = nh->create_publisher<geometry_msgs::msg::PoseStamped>("/utm", 1);
 
   std::thread gpsToUtmProcess{gpsToUtm};
 
-  ros::spin();
+  rclcpp::spin(nh);
+
+  rclcpp::shutdown();
+
   return 0;  
 }

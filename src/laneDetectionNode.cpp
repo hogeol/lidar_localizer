@@ -4,8 +4,8 @@
 #include <thread>
 
 //ros
-#include <ros/ros.h>
-#include <sensor_msgs/PointCloud2.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/point_cloud2.h>
 
 //pcl
 #include <pcl_conversions/pcl_conversions.h>
@@ -16,15 +16,15 @@
 #include "laneDetection.hpp"
 
 //publisher
-ros::Publisher point_lane_pub;
+rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr lane_point_pub;
 
-std::queue<sensor_msgs::PointCloud2ConstPtr> filtered_lidar_buf;
+std::queue<sensor_msgs::msg::PointCloud2::ConstPtr> filtered_lidar_buf;
 
 std::mutex mutex_control;
 
 LaneDetection::laneDetection lane_detection;
 
-void lidarCallback(const sensor_msgs::PointCloud2ConstPtr &filtered_lidar_msg)
+void lidarCallback(const sensor_msgs::msg::PointCloud2::ConstPtr &filtered_lidar_msg)
 {
   mutex_control.lock();
   filtered_lidar_buf.push(filtered_lidar_msg);
@@ -36,7 +36,7 @@ void laneDetection()
   while(1){
     if(!filtered_lidar_buf.empty()){
       mutex_control.lock();
-      ros::Time point_in_time = filtered_lidar_buf.front()->header.stamp;
+      rclcpp::Time point_in_time = filtered_lidar_buf.front()->header.stamp;
       std::string point_header = filtered_lidar_buf.front()->header.frame_id;
       pcl::PointCloud<pcl::PointXYZI>::Ptr point_in(new pcl::PointCloud<pcl::PointXYZI>());
       pcl::PointCloud<pcl::PointXYZI>::Ptr point_out(new pcl::PointCloud<pcl::PointXYZI>());
@@ -44,11 +44,11 @@ void laneDetection()
       filtered_lidar_buf.pop();
       mutex_control.unlock();
       lane_detection.extractDesiredDimension(point_in, point_out);
-      sensor_msgs::PointCloud2 point_msg;
+      sensor_msgs::msg::PointCloud2 point_msg;
       pcl::toROSMsg(*point_out, point_msg);
       point_msg.header.stamp = point_in_time;
       point_msg.header.frame_id = point_header;
-      point_lane_pub.publish(point_msg);
+      lane_point_pub -> publish(point_msg);
     }
     std::chrono::milliseconds dura(3);
     std::this_thread::sleep_for(dura);
@@ -57,8 +57,8 @@ void laneDetection()
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "lane_detection");
-  ros::NodeHandle nh;
+  rclcpp::init(argc, argv);
+  rclcpp::Node::SharedPtr nh;
   
   double range_x_min = 1.0;
   double range_x_max = 1.0;
@@ -67,22 +67,31 @@ int main(int argc, char **argv)
   double range_z_min = 1.0;
   double range_z_max = 1.0;
 
-  nh.getParam("range_x_min", range_x_min);
-  nh.getParam("range_x_max",range_x_max);
-  nh.getParam("range_y_min", range_y_min);
-  nh.getParam("range_y_max", range_y_max);
-  nh.getParam("range_z_min", range_z_min);
-  nh.getParam("range_z_max", range_z_max);
+  nh->declare_parameter("range_x_min", range_x_min);
+  nh->declare_parameter("range_x_max",range_x_max);
+  nh->declare_parameter("range_y_min", range_y_min);
+  nh->declare_parameter("range_y_max", range_y_max);
+  nh->declare_parameter("range_z_min", range_z_min);
+  nh->declare_parameter("range_z_max", range_z_max);
 
-  ros::Subscriber lidar_sub = nh.subscribe<sensor_msgs::PointCloud2>("filtered_point", 1, lidarCallback);
+  nh->get_parameter("range_x_min", range_x_min);
+  nh->get_parameter("range_x_max",range_x_max);
+  nh->get_parameter("range_y_min", range_y_min);
+  nh->get_parameter("range_y_max", range_y_max);
+  nh->get_parameter("range_z_min", range_z_min);
+  nh->get_parameter("range_z_max", range_z_max);
 
-  point_lane_pub = nh.advertise<sensor_msgs::PointCloud2>("laser_lane", 1);
+
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_sub{nh -> create_subscription<sensor_msgs::msg::PointCloud2>("filtered_point", 1, lidarCallback)};
+  lane_point_pub = nh -> create_publisher<sensor_msgs::msg::PointCloud2>("laser_lane", 1);
 
   lane_detection.init(range_x_min, range_x_max, range_y_min, range_y_max, range_z_min, range_z_max);
 
   std::thread lanDetectionProcess{laneDetection};
 
-  ros::spin();
+  rclcpp::spin(nh);
+
+  rclcpp::shutdown();
 
   return 0;
 }

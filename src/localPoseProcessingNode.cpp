@@ -5,9 +5,10 @@
 #include <thread>
 
 //ros
-#include <ros/ros.h>
-#include <sensor_msgs/Imu.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/imu.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 
 //eigen
 #include <Eigen/Core>
@@ -16,21 +17,20 @@
 
 //tf
 #include <tf2_ros/transform_broadcaster.h>
-#include <geometry_msgs/TransformStamped.h>
 
 //local
 #include "localPoseProcessing.hpp"
 
-ros::Publisher filtered_pose_pub;
+rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr filtered_pose_pub;
 
-std::queue<sensor_msgs::ImuConstPtr> imu_buf;
-std::queue<geometry_msgs::PoseStampedConstPtr> utm_buf;
+std::queue<sensor_msgs::msg::Imu::ConstPtr> imu_buf;
+std::queue<geometry_msgs::msg::PoseStamped::ConstPtr> utm_buf;
 
 std::mutex mutex_control;
 
 LocalPoseProcessing::localPoseProcessing local_pose_processing;
 
-void imuHandler(const sensor_msgs::ImuConstPtr &imu_msg)
+void imuHandler(const sensor_msgs::msg::Imu::ConstPtr &imu_msg)
 {
   mutex_control.lock();
   imu_buf.push(imu_msg);
@@ -40,7 +40,7 @@ void imuHandler(const sensor_msgs::ImuConstPtr &imu_msg)
   mutex_control.unlock();
 }
 
-void utmCallback(const geometry_msgs::PoseStampedConstPtr &utm_msg)
+void utmCallback(const geometry_msgs::msg::PoseStamped::ConstPtr &utm_msg)
 {
   mutex_control.lock();
   utm_buf.push(utm_msg);
@@ -57,7 +57,7 @@ void localProcessing()
   while(1){
     if(!imu_buf.empty()){
       mutex_control.lock();
-      ros::Time imu_in_time = imu_buf.front()->header.stamp;
+      rclcpp::Time imu_in_time{imu_buf.front()->header.stamp};
       Eigen::Quaterniond pres_orientation(imu_buf.front()->orientation.w, imu_buf.front()->orientation.x, imu_buf.front()->orientation.y, -imu_buf.front()->orientation.z);
       Eigen::Vector3d pres_position;
       imu_buf.pop();
@@ -72,7 +72,7 @@ void localProcessing()
       pres_orientation.normalize();
 
       if(imu_frame % local_pose_processing.getImuWindowSize() == 0){
-        geometry_msgs::PoseStamped local_pose_msg;
+        geometry_msgs::msg::PoseStamped local_pose_msg;
         local_pose_msg.header.stamp = imu_in_time;
         local_pose_msg.header.frame_id = "map";
         local_pose_msg.pose.position.x = pres_position.x();
@@ -82,7 +82,7 @@ void localProcessing()
         local_pose_msg.pose.orientation.x = pres_orientation.x();
         local_pose_msg.pose.orientation.y = pres_orientation.y();
         local_pose_msg.pose.orientation.z = pres_orientation.z();
-        filtered_pose_pub.publish(local_pose_msg);
+        filtered_pose_pub -> publish(local_pose_msg);
         imu_frame = 0;
       }
     }
@@ -93,27 +93,33 @@ void localProcessing()
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "localProcessing");
-  ros::NodeHandle nh;
+  rclcpp::init(argc, argv);
+  rclcpp::Node::SharedPtr nh;
 
   std::string imu_topic = "/vectornav/IMU";
   int imu_window_size = 4;
   int utm_window_size = 2;
 
-  nh.getParam("imu_topic", imu_topic);
-  nh.getParam("imu_window_size", imu_window_size);
-  nh.getParam("utm_window_size", utm_window_size);
+  nh -> declare_parameter("imu_topic", imu_topic);
+  nh -> declare_parameter("imu_window_size", imu_window_size);
+  nh -> declare_parameter("utm_window_size", utm_window_size);
 
-  ros::Subscriber imu_sub = nh.subscribe<sensor_msgs::Imu>(imu_topic, 1, imuHandler);
-  ros::Subscriber utm_sub = nh.subscribe<geometry_msgs::PoseStamped>("/utm", 1, utmCallback);
+  nh -> get_parameter("imu_topic", imu_topic);
+  nh -> get_parameter("imu_window_size", imu_window_size);
+  nh -> get_parameter("utm_window_size", utm_window_size);
 
-  filtered_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/filtered_pose", 1);  
+  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub{nh -> create_subscription<sensor_msgs::msg::Imu>(imu_topic, 1, imuHandler)};
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr utm_sub{nh -> create_subscription<geometry_msgs::msg::PoseStamped>("/utm", 1, utmCallback)};
+
+  filtered_pose_pub = nh -> create_publisher<geometry_msgs::msg::PoseStamped>("/filtered_pose", 1);
 
   local_pose_processing.init(imu_window_size, utm_window_size);
 
   std::thread localProcessingProcess{localProcessing};
   
-  ros::spin();
+  rclcpp::spin(nh);
+
+  rclcpp::shutdown();
 
   return 0;
 }

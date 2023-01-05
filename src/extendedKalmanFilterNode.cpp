@@ -4,18 +4,18 @@
 #include <thread>
 
 //ros
-#include <ros/ros.h>
-#include <nav_msgs/Odometry.h>
+#include <rclcpp/rclcpp.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 
 #include "extendedKalmanFilter.hpp"
 
-std::queue<nav_msgs::OdometryConstPtr> lidar_pose_buf;
+std::queue<nav_msgs::msg::Odometry::ConstPtr> lidar_pose_buf;
 
 std::mutex mutex_control;
 
 ExtendedKalmanFilter::extendedKalmanFilter extended_kalman_filter;
 
-void ndtCallback(const nav_msgs::OdometryConstPtr &lidar_pose_msg)
+void ndtCallback(const nav_msgs::msg::Odometry::ConstPtr &lidar_pose_msg)
 {
   mutex_control.lock();
   lidar_pose_buf.push(lidar_pose_msg);
@@ -35,14 +35,17 @@ void ekfProcess()
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "kalmanFilter");
-  ros::NodeHandle nh;
+  rclcpp::init(argc, argv);
+  rclcpp::Node::SharedPtr nh;
 
-  ros::Subscriber lidar_pose_sub = nh.subscribe<nav_msgs::Odometry>("ndt_pose", 1, ndtCallback);
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr lidar_pose_sub;
+  lidar_pose_sub = nh->create_subscription<nav_msgs::msg::Odometry>("ndt_pose", 1, ndtCallback);
 
   std::thread ekfProcessProcessing{ekfProcess};
 
-  ros::spin();
+  rclcpp::spin(nh);
 
+  rclcpp::shutdown();
+  
   return 0;
 }
