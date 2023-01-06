@@ -103,7 +103,7 @@ void expWeightProcess()
 int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
-  rclcpp::Node::SharedPtr nh;
+  auto nh(std::make_shared<rclcpp::Node>("exponential_weight_filter_node"));
 
   position_init = false;
 

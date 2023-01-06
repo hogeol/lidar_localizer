@@ -36,7 +36,7 @@ void ekfProcess()
 int main(int argc, char **argv)
 {
   rclcpp::init(argc, argv);
-  rclcpp::Node::SharedPtr nh;
+  auto nh{std::make_shared<rclcpp::Node>("extended_kalman_filter_node")};
 
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr lidar_pose_sub;
   lidar_pose_sub = nh->create_subscription<nav_msgs::msg::Odometry>("ndt_pose", 1, ndtCallback);

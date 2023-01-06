@@ -72,7 +72,7 @@ target_link_libraries(gps_to_utm_node
   ${GeographicLib_LIBRARIES}
 )
 install(TARGETS gps_to_utm_node
-  DESTINATION lib/${PROJECT_NAME}
+  DESTINATION share/${PROJECT_NAME}
 )
 
 #lidar pre-filtering node
@@ -90,7 +90,7 @@ target_link_libraries(lidar_processing_node
   ${PCL_LIBRARIES}
 )
 install(TARGETS lidar_processing_node
-  DESTINATION lib/${PROJECT_NAME}
+  DESTINATION share/${PROJECT_NAME}
 )
 
 #lane detection node
@@ -109,7 +109,7 @@ target_link_libraries(lane_detection_node
   ${PCL_LIBRARIES}
 )
 install(TARGETS lane_detection_node
-  DESTINATION lib/${PROJECT_NAME}
+  DESTINATION share/${PROJECT_NAME}
 )
 
 #imu pre-filtering node
@@ -127,7 +127,7 @@ target_link_libraries(local_pose_processing_node
   ${EIGEN3_LIBRARIES}
 )
 install(TARGETS local_pose_processing_node
-  DESTINATION lib/${PROJECT_NAME}
+  DESTINATION share/${PROJECT_NAME}
 )
 
 #ndt matching node
@@ -149,7 +149,7 @@ target_link_libraries(ndt_matching_node
   pcl_omp
 )
 install(TARGETS ndt_matching_node
-  DESTINATION lib/${PROJECT_NAME}
+  DESTINATION share/${PROJECT_NAME}
 )
 
 #exponential weight filter node
@@ -168,7 +168,7 @@ target_link_libraries(exponential_weight_filter_node
   ${EIGEN3_LIBRARIES}
 )
 install(TARGETS exponential_weight_filter_node
-  DESTINATION lib/${PROJECT_NAME}
+  DESTINATION share/${PROJECT_NAME}
 )
 
 #kalman filter node (final odometry)
@@ -184,7 +184,7 @@ target_link_libraries(extended_kalman_filter_node
   ${EIGEN3_LIBRARIES}
 )
 install(TARGETS extended_kalman_filter_node
-  DESTINATION lib/${PROJECT_NAME}
+  DESTINATION share/${PROJECT_NAME}
 )
 
 ament_package()

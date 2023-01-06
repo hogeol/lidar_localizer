@@ -58,30 +58,22 @@ void laneDetection()
 int main(int argc, char **argv)
 {
   rclcpp::init(argc, argv);
-  rclcpp::Node::SharedPtr nh;
+  auto nh{std::make_shared<rclcpp::Node>("lane_detection_node")};
+
+  nh->declare_parameter("range_x_min", 1.0);
+  nh->declare_parameter("range_x_max",1.0);
+  nh->declare_parameter("range_y_min", 1.0);
+  nh->declare_parameter("range_y_max", 1.0);
+  nh->declare_parameter("range_z_min", 1.0);
+  nh->declare_parameter("range_z_max", 1.0);
+
+  double range_x_min(nh->get_parameter("range_x_min").as_double());
+  double range_x_max(nh->get_parameter("range_x_max").as_double());
+  double range_y_min(nh->get_parameter("range_y_min").as_double());
+  double range_y_max(nh->get_parameter("range_y_max").as_double());
+  double range_z_min(nh->get_parameter("range_y_min").as_double());
+  double range_z_max(nh->get_parameter("range_y_max").as_double());
   
-  double range_x_min = 1.0;
-  double range_x_max = 1.0;
-  double range_y_min = 1.0;
-  double range_y_max = 1.0;
-  double range_z_min = 1.0;
-  double range_z_max = 1.0;
-
-  nh->declare_parameter("range_x_min", range_x_min);
-  nh->declare_parameter("range_x_max",range_x_max);
-  nh->declare_parameter("range_y_min", range_y_min);
-  nh->declare_parameter("range_y_max", range_y_max);
-  nh->declare_parameter("range_z_min", range_z_min);
-  nh->declare_parameter("range_z_max", range_z_max);
-
-  nh->get_parameter("range_x_min", range_x_min);
-  nh->get_parameter("range_x_max",range_x_max);
-  nh->get_parameter("range_y_min", range_y_min);
-  nh->get_parameter("range_y_max", range_y_max);
-  nh->get_parameter("range_z_min", range_z_min);
-  nh->get_parameter("range_z_max", range_z_max);
-
-
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr lidar_sub{nh -> create_subscription<sensor_msgs::msg::PointCloud2>("filtered_point", 1, lidarCallback)};
   lane_point_pub = nh -> create_publisher<sensor_msgs::msg::PointCloud2>("laser_lane", 1);
 

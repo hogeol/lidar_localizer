@@ -36,7 +36,7 @@ void laserProcessing()
     if(!lidar_buf.empty()){
       mutex_control.lock();
       rclcpp::Time point_in_time{lidar_buf.front()->header.stamp};
-      std::string point_header = lidar_buf.front()->header.frame_id;
+      std::string point_header{lidar_buf.front()->header.frame_id};
       pcl::PointCloud<pcl::PointXYZI>::Ptr point_in(new pcl::PointCloud<pcl::PointXYZI>());
       pcl::PointCloud<pcl::PointXYZI>::Ptr point_out(new pcl::PointCloud<pcl::PointXYZI>());
       pcl::fromROSMsg(*lidar_buf.front(), *point_in);
@@ -59,26 +59,19 @@ int main(int argc, char** argv)
   rclcpp::init(argc, argv);
   auto nh{std::make_shared<rclcpp::Node>("lidar_processing_node")};
 
-  std::string laser_topic = "/velodyne_points";
-  int scan_line=32;
-  double max_distance=60.0;
-  double min_distance=3.0;
-  double vertical_angle=0.3f;
-  double filtering_leaf_size=0.1;
-  
-  nh->declare_parameter("laser_topic", laser_topic);
-  nh->declare_parameter("scan_line", scan_line);
-  nh->declare_parameter("max_distance", max_distance);
-  nh->declare_parameter("min_distance", min_distance);
-  nh->declare_parameter("vertical_angle", vertical_angle);
-  nh->declare_parameter("filtering_leaf_size", filtering_leaf_size);
+  nh->declare_parameter("laser_topic", "/velodyne_points");
+  nh->declare_parameter("scan_line", 16);
+  nh->declare_parameter("max_distance", 60.0);
+  nh->declare_parameter("min_distance", 3.0);
+  nh->declare_parameter("vertical_angle", 0.3);
+  nh->declare_parameter("filtering_leaf_size", 0.1);
 
-  nh->get_parameter("laser_topic", laser_topic);
-  nh->get_parameter("scan_line", scan_line);
-  nh->get_parameter("max_distance", max_distance);
-  nh->get_parameter("min_distance", min_distance);
-  nh->get_parameter("vertical_angle", vertical_angle);
-  nh->get_parameter("filtering_leaf_size", filtering_leaf_size);
+  std::string laser_topic(nh->get_parameter("laser_topic").as_string());
+  int scan_line(nh->get_parameter("scan_line").as_int());
+  double max_distance(nh->get_parameter("max_distance").as_double());
+  double min_distance(nh->get_parameter("min_distance").as_double());
+  double vertical_angle(nh->get_parameter("vertical_angle").as_double());
+  double filtering_leaf_size(nh->get_parameter("filtering_leaf_size").as_double());
 
   lidar_processing.setLidar(scan_line, max_distance, min_distance, vertical_angle, filtering_leaf_size);
 

@@ -64,19 +64,24 @@ void gpsToUtm()
 int main(int argc, char **argv)
 {
   rclcpp::init(argc, argv);
-  rclcpp::Node::SharedPtr nh;
-  
-  std::string hemisphere = "North";
-  std::string gps_topic = "fix";
-  double offset_x=0;
-  double offset_y=0;
-  double offset_z=0;
-  int utm_zone=52;
+  auto nh{std::make_shared<rclcpp::Node>("gps_to_utm_node")};
   
   RCLCPP_INFO(nh->get_logger(), "You can find utm zone at https://mangomap.com/robertyoung/maps/69585/what-utm-zone-am-i-in-#");
 
-  if(nh -> get_parameter("hemisphere",hemisphere)){
-    
+  nh -> declare_parameter("utm_zone", 52);
+  nh -> declare_parameter("gps_topic", "fix");
+  nh -> declare_parameter("gps_offset_x", 0);
+  nh -> declare_parameter("gps_offset_y", 0);
+  nh -> declare_parameter("gps_offset_z", 0);
+  nh -> declare_parameter("hemisphere", "North");
+
+  int utm_zone(nh -> get_parameter("utm_zone").as_int());
+  std::string gps_topic(nh->get_parameter("gps_topic").as_string());
+  double gps_offset_x(nh->get_parameter("gps_offset_x").as_double());
+  double gps_offset_y(nh->get_parameter("gps_offset_y").as_double());
+  double gps_offset_z(nh->get_parameter("gps_offset_z").as_double());
+  std::string hemisphere(nh->get_parameter("hemisphere").as_string());
+  if(hemisphere != "North" || hemisphere != "South"){
     RCLCPP_INFO(nh->get_logger(), "North hemisphere or south hemisphere? %s ",hemisphere.c_str());
     if(hemisphere != "North" && hemisphere != "South"){
       RCLCPP_INFO(nh->get_logger(), "hemisphere only can equal to North or South!");
@@ -86,20 +91,9 @@ int main(int argc, char **argv)
     RCLCPP_WARN(nh->get_logger(), "You need to specify you are in the north or south hemisphere. Default north");
     hemisphere = "North";
   }
-  nh -> declare_parameter("utm_zone", 52);
-  nh -> declare_parameter("gps_topic", "fix");
-  nh -> declare_parameter("gps_offset_x", 0);
-  nh -> declare_parameter("gps_offset_y", 0);
-  nh -> declare_parameter("gps_offset_z", 0);
 
-  nh -> get_parameter("utm_zone", utm_zone);
-  nh -> get_parameter("gps_topic", gps_topic);
-  nh -> get_parameter("gps_offset_x", offset_x);
-  nh -> get_parameter("gps_offset_y", offset_y);
-  nh -> get_parameter("gps_offset_z", offset_z);
-  
   gpsToUtmClass.init(hemisphere, utm_zone);
-  gpsToUtmClass.setGpsOffset(offset_x, offset_y, offset_z);
+  gpsToUtmClass.setGpsOffset(gps_offset_x, gps_offset_y, gps_offset_z);
 
   rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gps_sub{nh -> create_subscription<sensor_msgs::msg::NavSatFix>(gps_topic, 1, gpsCallback)};
 

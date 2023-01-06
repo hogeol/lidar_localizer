@@ -94,19 +94,15 @@ void localProcessing()
 int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
-  rclcpp::Node::SharedPtr nh;
+  auto nh(std::make_shared<rclcpp::Node>("local_pose_processing_node"));
 
-  std::string imu_topic = "/vectornav/IMU";
-  int imu_window_size = 4;
-  int utm_window_size = 2;
+  nh -> declare_parameter("imu_topic", "/vectornav/IMU");
+  nh -> declare_parameter("imu_window_size", 4);
+  nh -> declare_parameter("utm_window_size", 2);
 
-  nh -> declare_parameter("imu_topic", imu_topic);
-  nh -> declare_parameter("imu_window_size", imu_window_size);
-  nh -> declare_parameter("utm_window_size", utm_window_size);
-
-  nh -> get_parameter("imu_topic", imu_topic);
-  nh -> get_parameter("imu_window_size", imu_window_size);
-  nh -> get_parameter("utm_window_size", utm_window_size);
+  std::string imu_topic(nh->get_parameter("imu_topic").as_string());
+  int imu_window_size(nh->get_parameter("imu_window_size").as_int());
+  int utm_window_size(nh->get_parameter("utm_window_size").as_int());
 
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub{nh -> create_subscription<sensor_msgs::msg::Imu>(imu_topic, 1, imuHandler)};
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr utm_sub{nh -> create_subscription<geometry_msgs::msg::PoseStamped>("/utm", 1, utmCallback)};
