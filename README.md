@@ -1,4 +1,4 @@
-# lidar_localizer
+# LiDAR_localizer
 
 #### Follow below link to download geographic library
 
