@@ -206,11 +206,11 @@ int main(int argc, char** argv)
   nh -> declare_parameter("kdtree_search_radius", 150.0);
   double kdtree_search_radius(nh->get_parameter("kdtree_search_radius").as_double());
   nh -> declare_parameter("ndt_near_points", 50000);
-  double ndt_near_points(nh->get_parameter("ndt_near_points").as_double());
+  int ndt_near_points(nh->get_parameter("ndt_near_points").as_int());
   nh -> declare_parameter("ndt_max_iteration", 50);
-  double ndt_max_iteration(nh->get_parameter("ndt_max_iteration").as_double());
+  int ndt_max_iteration(nh->get_parameter("ndt_max_iteration").as_int());
   nh -> declare_parameter("ndt_max_threads", 10);
-  double ndt_max_threads(nh->get_parameter("ndt_max_threads").as_double());
+  int ndt_max_threads(nh->get_parameter("ndt_max_threads").as_int());
   
   ndt_matching.setMapTransformInfo(map_rotation_theta, map_translation_x, map_translation_y, map_translation_z);
   if(is_init == true){

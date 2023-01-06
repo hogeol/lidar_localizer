@@ -70,9 +70,9 @@ int main(int argc, char **argv)
 
   nh -> declare_parameter("utm_zone", 52);
   nh -> declare_parameter("gps_topic", "fix");
-  nh -> declare_parameter("gps_offset_x", 0);
-  nh -> declare_parameter("gps_offset_y", 0);
-  nh -> declare_parameter("gps_offset_z", 0);
+  nh -> declare_parameter("gps_offset_x", 0.0);
+  nh -> declare_parameter("gps_offset_y", 0.0);
+  nh -> declare_parameter("gps_offset_z", 0.0);
   nh -> declare_parameter("hemisphere", "North");
 
   int utm_zone(nh -> get_parameter("utm_zone").as_int());
