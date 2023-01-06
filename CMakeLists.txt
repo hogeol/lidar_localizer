@@ -187,7 +187,12 @@ install(TARGETS extended_kalman_filter_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
+#launch file install
 install(DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}/
+)
+#map directory install
+install(DIRECTORY map
   DESTINATION share/${PROJECT_NAME}/
 )
 ament_package()

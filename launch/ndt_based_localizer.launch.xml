@@ -128,7 +128,11 @@
   <!-- TF -->
   <node pkg="tf2_ros" exec="static_transform_publisher" name="baselink2imu" args="0 0 0 0 0 0 /base_link /vectornav" />
   <node pkg="tf2_ros" exec="static_transform_publisher" name="baselink2lidar" args="0 0 0 0 0 0 /base_link /velodyne" />
-  <!-- <node pkg="tf" type="static_transform_publisher" name="baselink2gps" args="0.0 0.0 0.0 0 0 0 /base_link /utm 10" /> -->
+
+  <!-- map server -->
+  <node pkg="nav2_map_server" exec="map_server" name="map_server">
+    <param name="yaml_filename" value="$(find-pkg-share lidar_localizer)/map/global_map.yaml" />
+  </node>
 
   <!-- ndt trajectory for rviz-->
   <!-- <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="trajectory_server_gps" ns="ndt" >
@@ -154,7 +158,7 @@
 
   <!-- rviz -->
   <group if="$(var rviz)">
-    <node launch-prefix="nice" pkg="rviz2" exec="rviz2" name="rviz" args="-d $(find-pkg-share lidar_localizer)/rviz/ndt.rviz" />
+    <node launch-prefix="nice" pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share lidar_localizer)/rviz/ndt.rviz" />
   </group>
 
 </launch>
