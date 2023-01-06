@@ -30,5 +30,5 @@ Plz find your best threads through experience
 ```
 After execute the launch file,
 open another terminal, and enter below command
+$ ros2 run nav2_util lifecycle_bringup map_server
 ```
-> ros2 run nav2_util lifecycle_bringup map_server
