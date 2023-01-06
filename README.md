@@ -31,10 +31,7 @@ Plz find your best threads through experience
 
 ```
 Cause it cannot support 'map-server' in humble, 
-
 I don't know how to load HD map in rviz2
-
 If you can load HD map in ros2, please commit that method
-
 Thank you
 ```
