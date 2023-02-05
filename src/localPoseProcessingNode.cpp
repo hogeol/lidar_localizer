@@ -63,10 +63,10 @@ void localProcessing()
       Eigen::Matrix4d imu_heading{Eigen::Matrix4d::Identity()};
       imu_heading.block<3,3>(0,0) = pres_orientation.toRotationMatrix();
       Eigen::Matrix4d imu_filtering{Eigen::Matrix4d::Identity()};
-      imu_filtering << std::cos(1.5708), -std::sin(1.5708), 0.0, 0.0,
-                          std::sin(1.5708),  std::cos(1.5708), 0.0, 0.0,
-                          0.0              ,  0.0              , 1.0, 0.0,
-                          0.0              ,  0.0              , 0.0, 1.0;
+      // imu_filtering << std::cos(1.5708), -std::sin(1.5708), 0.0, 0.0,
+      //                     std::sin(1.5708),  std::cos(1.5708), 0.0, 0.0,
+      //                     0.0              ,  0.0              , 1.0, 0.0,
+      //                     0.0              ,  0.0              , 0.0, 1.0;
       imu_heading = imu_filtering * imu_heading;                           
       pres_orientation = imu_heading.block<3,3>(0,0);
 

@@ -19,7 +19,7 @@
   <arg name="max_distance" default="100.0" />
   <arg name="min_distance" default="0.0" />
   <arg name="vertical_resolution" default="0.33" />
-  <arg name="filtering_leaf_size" default="1.2" />
+  <arg name="filtering_leaf_size" default="2.0" />
   
   <!-- lane detection arguments -->
   <arg name="range_x_min" default="0.0" />
@@ -30,7 +30,7 @@
   <arg name="range_z_max" default="0.0" />
 
   <!-- ndt arguments -->
-  <arg name="pcd_map_resolution" default="1.2" />
+  <arg name="pcd_map_resolution" default="2.0" />
   <arg name="pcd_map_path" default="$(find lidar_localizer)/maps/" />
   <arg name="pcd_map_name" default="boon_pyung.pcd" />
     <!-- map transform matrix info if needed-->
@@ -49,7 +49,7 @@
   <arg name="odom_init_y" default="0.0" />
   <arg name="odom_init_z" default="0.0" />
   <arg name="odom_init_rotation" default="0.0" />
-  <arg name="sensor_diff_x" default="0.2" />
+  <arg name="sensor_diff_x" default="0.0" />
   <arg name="sensor_diff_y" default="0.0" />
   <arg name="sensor_diff_z" default="0.0" />
     <!-- submap_select 1 is k-nearest search, 0 is radius search-->
@@ -61,11 +61,11 @@
 
   <!-- imu and utm arguments-->
   <arg name="imu_topic" default="/imu" />
-  <arg name="imu_window_size" default="2" />
-  <arg name="utm_window_size" default="1" />
+  <arg name="imu_window_size" default="4" />
+  <arg name="utm_window_size" default="2" />
   
   <!-- ekf arguments -->
-  <arg name="weight_orientation_window_size" default="2" />
+  <arg name="weight_orientation_window_size" default="1" />
   <arg name="weight_position_window_size" default="4" />
 
   <!-- rviz -->

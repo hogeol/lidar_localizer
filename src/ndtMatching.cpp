@@ -113,12 +113,12 @@ namespace NdtMatching{
         //printf("\nlocal_count: %d\n", m_local_count);
     }
     
+    sensorTFCorrection(pose_out);
     pcl::transformPointCloud(*pc_in, *pc_out, m_last_pose);
     pose_out.translation().x() = m_last_pose(0,3);
     pose_out.translation().y() = m_last_pose(1,3);
     pose_out.translation().z() = m_last_pose(2,3);
     pose_out.linear() = m_last_pose.block<3,3>(0,0).cast<double>();
-    sensorTFCorrection(pose_out);
     end = clock();
 
     // for(int i=0; i<4; i++){
@@ -131,13 +131,12 @@ namespace NdtMatching{
     //printf("\nndt_time: %f", result_time);
   }
 
-  void ndtMatching::sensorTFCorrection(Eigen::Isometry3d &pose_out)
+  inline void ndtMatching::sensorTFCorrection(Eigen::Isometry3d &pose_out)
   {
-    Eigen::Vector4f tf_bias(m_diff_x, m_diff_y, m_diff_z, 1.0);
-    tf_bias = m_last_pose * tf_bias;
-    pose_out.translation().x() = tf_bias.x();
-    pose_out.translation().y() = tf_bias.y();
-    pose_out.translation().z() = tf_bias.z();
+    Eigen::Vector4f tf_bias{m_diff_x, m_diff_y, m_diff_z, 1.0};
+    pose_out.translation().x() += tf_bias.x();
+    pose_out.translation().y() += tf_bias.y();
+    pose_out.translation().z() += tf_bias.z();
   }
   void ndtMatching::radiusSearch(const Eigen::Vector3d &based_point, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out)
   {
@@ -179,11 +178,6 @@ namespace NdtMatching{
     pcl::transformPointCloud(*pc_in, *mp_pcd_map, transform_matrix);
   }
   
-  void ndtMatching::relocalize(const Eigen::Matrix4f &last_gps_odom)
-  {
-    m_last_pose = last_gps_odom;
-  }
-
   double ndtMatching::calDistance(const Eigen::Vector3f &gps_xyz, const Eigen::Vector3f &measured_pose)
   {
     //printf("\ndistance: %.4f\n", sqrt(pow(gps_xyz(0) - measured_pose(0), 2) + pow(gps_xyz(1) - measured_pose(1), 2)));

@@ -96,7 +96,6 @@ void ndtMatching()
       Eigen::Isometry3d ndt_result_pose = Eigen::Isometry3d::Identity();
       //ndt_matching.processNdt(point_in, point_out, nav_pose, ndt_result_pose);
       ndt_matching.processPlaceRecognition(point_in, point_out, nav_pose, ndt_result_pose);
-
       Eigen::Vector3d ndt_position = ndt_result_pose.translation();
       Eigen::Quaterniond ndt_orientation(ndt_result_pose.rotation());
       ndt_orientation.normalize();
@@ -163,7 +162,7 @@ void ndtMatching()
       }
       odom_frame++;
       double diff = sqrt(pow(ndt_result_pose.translation().x() - nav_pose.translation().x(), 2) + pow(ndt_result_pose.translation().y() - nav_pose.translation().y(), 2));
-      //printf("\n---\ndiff: %.4f\n---\n", diff);
+      printf("\n---\ndiff: %.4f\n---\n", diff);
     }
     std::chrono::milliseconds dura(3);
     std::this_thread::sleep_for(dura);
