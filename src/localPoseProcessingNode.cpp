@@ -3,6 +3,7 @@
 #include <queue>
 #include <mutex>
 #include <thread>
+#include <cmath>
 
 //ros
 #include <ros/ros.h>
@@ -58,7 +59,17 @@ void localProcessing()
     if(!imu_buf.empty()){
       mutex_control.lock();
       ros::Time imu_in_time = imu_buf.front()->header.stamp;
-      Eigen::Quaterniond pres_orientation(imu_buf.front()->orientation.w, imu_buf.front()->orientation.x, imu_buf.front()->orientation.y, -imu_buf.front()->orientation.z);
+      Eigen::Quaterniond pres_orientation{imu_buf.front()->orientation.w, imu_buf.front()->orientation.x, imu_buf.front()->orientation.y, imu_buf.front()->orientation.z};      
+      Eigen::Matrix4d imu_heading{Eigen::Matrix4d::Identity()};
+      imu_heading.block<3,3>(0,0) = pres_orientation.toRotationMatrix();
+      Eigen::Matrix4d imu_filtering{Eigen::Matrix4d::Identity()};
+      imu_filtering << std::cos(1.5708), -std::sin(1.5708), 0.0, 0.0,
+                          std::sin(1.5708),  std::cos(1.5708), 0.0, 0.0,
+                          0.0              ,  0.0              , 1.0, 0.0,
+                          0.0              ,  0.0              , 0.0, 1.0;
+      imu_heading = imu_filtering * imu_heading;                           
+      pres_orientation = imu_heading.block<3,3>(0,0);
+
       Eigen::Vector3d pres_position;
       imu_buf.pop();
       if(!utm_buf.empty()){
@@ -70,6 +81,7 @@ void localProcessing()
       local_pose_processing.weightPrevOrientation(pres_orientation);
       imu_frame++;
       pres_orientation.normalize();
+      //printf("\n--IMU\nw: %.3f\nx: %.3f\ny: %.3f\nz: %.3f\n---\n", pres_orientation.w(), pres_orientation.x(), pres_orientation.y(), pres_orientation.z());
 
       if(imu_frame % local_pose_processing.getImuWindowSize() == 0){
         geometry_msgs::PoseStamped local_pose_msg;

@@ -25,16 +25,17 @@ namespace NdtMatching{
     m_diff_z = diff_z;
   }
 
-  void ndtMatching::init(const double &map_resolution, const std::string &map_path, const std::string &map_name, const bool &submap_select, const double &search_radius, const int & near_points, const int &max_iter, const int &ndt_threads)
+  void ndtMatching::init(const double &map_resolution, const std::string &map_path, const std::string &map_name, const bool &submap_select, const double &search_radius, const int & near_points, const int &max_iter, const int &ndt_threads, const bool &gps_diff_matching, const int &place_recognition_method)
   {
     m_local_count = 0;
     m_map_resolution = map_resolution;
     m_submap_select = submap_select;
     m_search_radius = search_radius;
     m_near_points = near_points;
+    m_gps_diff_matching = gps_diff_matching;
+    m_place_recognition_method = place_recognition_method;
     mp_pcd_map = pcl::PointCloud<pcl::PointXYZI>::Ptr(new pcl::PointCloud<pcl::PointXYZI>());
     m_kd_tree = pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr(new pcl::KdTreeFLANN<pcl::PointXYZI>());
-    m_ndt = pclomp::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>::Ptr(new pclomp::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>());
     
     pcl::PointCloud<pcl::PointXYZI>::Ptr map_load_pcd(new pcl::PointCloud<pcl::PointXYZI>());
     pcl::PointCloud<pcl::PointXYZI>::Ptr map_after_downsampling_pcd(new pcl::PointCloud<pcl::PointXYZI>());
@@ -42,7 +43,7 @@ namespace NdtMatching{
     if(pcl::io::loadPCDFile<pcl::PointXYZI>(map_path + map_name, *map_load_pcd) == -1){
       PCL_ERROR("Couldn't read source pcd file!\n");
     }
-    
+
     pcl::ApproximateVoxelGrid<pcl::PointXYZI> app_voxel_grid;
     app_voxel_grid.setLeafSize(m_map_resolution, m_map_resolution, m_map_resolution);
     app_voxel_grid.setInputCloud(map_load_pcd);
@@ -50,40 +51,62 @@ namespace NdtMatching{
     //transform if UTM coordinate is not provided in mapping (lotation is only z-axis based)
     pcdMapTransform(map_after_downsampling_pcd);
     m_kd_tree->setInputCloud(mp_pcd_map);
-    m_ndt->setTransformationEpsilon(0.001);
-    m_ndt->setStepSize(0.1);
-    m_ndt->setResolution(3.0);
-    //m_ndt->setNumThreads(omp_get_max_threads());
-    m_ndt->setNumThreads(ndt_threads);
-    m_ndt->setMaximumIterations(max_iter);
-    m_ndt->setInputTarget(mp_pcd_map);
+
+    if(place_recognition_method == 0){
+      m_ndt = pclomp::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>::Ptr(new pclomp::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>());
+      m_ndt->setTransformationEpsilon(0.001);
+      m_ndt->setStepSize(0.1);
+      m_ndt->setResolution(3.0);
+      m_ndt->setNumThreads(ndt_threads);
+      m_ndt->setMaximumIterations(max_iter);
+      m_ndt->setInputTarget(mp_pcd_map);
+    }
+    else if(place_recognition_method == 1){
+      m_vgicp = fast_gicp::FastVGICPCuda<pcl::PointXYZI, pcl::PointXYZI>::Ptr(new fast_gicp::FastVGICPCuda<pcl::PointXYZI, pcl::PointXYZI>());
+      m_vgicp->setInputTarget(mp_pcd_map);
+      m_vgicp->setMaximumIterations(max_iter);
+    }
   }
 
-  void ndtMatching::processNdt(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Isometry3d &pose_in, Eigen::Isometry3d &pose_out)
+  void ndtMatching::processPlaceRecognition(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Isometry3d &pose_in, Eigen::Isometry3d &pose_out)
   {
     clock_t start, end;
     //NDT
     start = clock();
-    m_ndt->setInputSource(pc_in);
-    
+    double matching_score = 0.0;
     pcl::PointCloud<pcl::PointXYZI>::Ptr aligned_pcd(new pcl::PointCloud<pcl::PointXYZI>());
-    m_ndt->align(*aligned_pcd, m_last_pose);
-    //m_ndt->align(*aligned_pcd);
-    double ndt_score =  m_ndt->getFitnessScore();
-    if(m_ndt->hasConverged())
-      //printf("--\nscore: %.4f, iteration: %d\n---\n", ndt_score, m_ndt->getFinalNumIteration());
-
-    //In fitness score, lower is better
-    m_last_pose = m_ndt->getFinalTransformation();
+    if(m_place_recognition_method == 0){
+      m_ndt->setInputSource(pc_in);
     
-    Eigen::Vector3f ndt_xyz(m_last_pose(0,3), m_last_pose(1,3), m_last_pose(2,3));
+      m_ndt->align(*aligned_pcd, m_last_pose);
+      //m_ndt->align(*aligned_pcd);
+      matching_score =  m_ndt->getFitnessScore();
+      if(m_ndt->hasConverged())
+        printf("--\nscore: %.4f, iteration: %d\n---\n", matching_score, m_ndt->getFinalNumIteration());
+
+      //In fitness score, lower is better
+      m_last_pose = m_ndt->getFinalTransformation();
+    }
+    else if(m_place_recognition_method == 1){
+      m_vgicp->setInputSource(pc_in);
+      m_vgicp->align(*aligned_pcd, m_last_pose);
+      matching_score = m_vgicp->getFitnessScore();
+      if(m_vgicp->hasConverged())
+        printf("--\nscore: %.4f\n---\n", matching_score);
+
+      //In fitness score, lower is better
+      m_last_pose = m_vgicp->getFinalTransformation();
+    }
+    
+    Eigen::Vector3f measured_pose(m_last_pose(0,3), m_last_pose(1,3), m_last_pose(2,3));
     Eigen::Vector3d gps_in_pose(pose_in.translation().x(), pose_in.translation().y(), pose_in.translation().z());
     
-    if(calDistance(gps_in_pose.cast<float>(), ndt_xyz) > 0.5 && ndt_score > 0.15){
-        if(m_local_count % 10 == 0){
+    if(m_gps_diff_matching && calDistance(gps_in_pose.cast<float>(), measured_pose) > 0.4 && matching_score > 0.9){
+        if(m_local_count % 20 == 0){
           m_last_pose(0,3) = gps_in_pose.x();
           m_last_pose(1,3) = gps_in_pose.y();
           m_last_pose(2,3) = gps_in_pose.z();
+          m_last_pose.block<3,3>(0,0) = pose_in.linear().cast<float>();
           m_local_count = 0;
         }
         m_local_count++;
@@ -155,15 +178,25 @@ namespace NdtMatching{
                           0.0              ,  0.0              , 0.0, 1.0; 
     pcl::transformPointCloud(*pc_in, *mp_pcd_map, transform_matrix);
   }
-  double ndtMatching::calDistance(const Eigen::Vector3f &gps_xyz, const Eigen::Vector3f &ndt_xyz)
-  {
-    //printf("\ndistance: %.4f\n", sqrt(pow(gps_xyz(0) - ndt_xyz(0), 2) + pow(gps_xyz(1) - ndt_xyz(1), 2)));
-    return (sqrt(pow(gps_xyz.x() - ndt_xyz.x(), 2) + pow(gps_xyz.y() - ndt_xyz.y(), 2)));    
-  }
   
   void ndtMatching::relocalize(const Eigen::Matrix4f &last_gps_odom)
   {
     m_last_pose = last_gps_odom;
+  }
+
+  double ndtMatching::calDistance(const Eigen::Vector3f &gps_xyz, const Eigen::Vector3f &measured_pose)
+  {
+    //printf("\ndistance: %.4f\n", sqrt(pow(gps_xyz(0) - measured_pose(0), 2) + pow(gps_xyz(1) - measured_pose(1), 2)));
+    return (sqrt(pow(gps_xyz.x() - measured_pose.x(), 2) + pow(gps_xyz.y() - measured_pose.y(), 2)));    
+  }
+
+  void ndtMatching::relocalizeService(const float &search_radius)
+  {
+    pcl::PointCloud<pcl::PointXYZI>::Ptr last_place_points{new pcl::PointCloud<pcl::PointXYZI>()};
+    Eigen::Vector3d last_place_translation{m_last_pose(0,3), m_last_pose(1,3), m_last_pose(2,3)};
+    
+    radiusSearch(last_place_translation, last_place_points);
+    
   }
 
   ndtMatching::ndtMatching(void)

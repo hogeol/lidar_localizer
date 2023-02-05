@@ -12,6 +12,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Odometry.h>
+#include <lidar_localizer/relocalize.h>
 //tf
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
@@ -50,6 +51,11 @@ void poseCallback(const geometry_msgs::PoseStampedConstPtr &pose_msg)
   mutex_control.unlock();
 }
 
+bool reLocalizeCallback(lidar_localizer::relocalize::Request &req, lidar_localizer::relocalize::Response &res)
+{
+  return res.success;
+}
+
 int init_cnt = 0;
 void ndtMatching()
 {
@@ -70,7 +76,7 @@ void ndtMatching()
       nav_pose.translation().z() = filtered_pose_buf.back()->pose.position.z;
       nav_pose.linear() = local_orientation.toRotationMatrix();
       
-      if(is_init == false || init_cnt < 30){
+      if(is_init == false){
         Eigen::Vector3d eigen_rpy = nav_pose.rotation().eulerAngles(0, 1, 2);
         ndt_matching.setInitPosition(nav_pose.translation().x(), nav_pose.translation().y(), nav_pose.translation().z(), eigen_rpy.z());
         is_init = true;
@@ -88,7 +94,8 @@ void ndtMatching()
       
       //pose after ndt
       Eigen::Isometry3d ndt_result_pose = Eigen::Isometry3d::Identity();
-      ndt_matching.processNdt(point_in, point_out, nav_pose, ndt_result_pose);
+      //ndt_matching.processNdt(point_in, point_out, nav_pose, ndt_result_pose);
+      ndt_matching.processPlaceRecognition(point_in, point_out, nav_pose, ndt_result_pose);
 
       Eigen::Vector3d ndt_position = ndt_result_pose.translation();
       Eigen::Quaterniond ndt_orientation(ndt_result_pose.rotation());
@@ -156,7 +163,7 @@ void ndtMatching()
       }
       odom_frame++;
       double diff = sqrt(pow(ndt_result_pose.translation().x() - nav_pose.translation().x(), 2) + pow(ndt_result_pose.translation().y() - nav_pose.translation().y(), 2));
-      printf("\n---\ndiff: %.4f\n---\n", diff);
+      //printf("\n---\ndiff: %.4f\n---\n", diff);
     }
     std::chrono::milliseconds dura(3);
     std::this_thread::sleep_for(dura);
@@ -174,7 +181,7 @@ int main(int argc, char** argv)
   int ndt_near_points = 500000;
   int ndt_max_iteration = 50;
   int ndt_max_threads = 10;
-  bool submap_select=1;
+  bool submap_select=true;
   double odom_init_x = 0.0;
   double odom_init_y = 0.0;
   double odom_init_z = 0.0;
@@ -187,6 +194,9 @@ int main(int argc, char** argv)
   double map_translation_y=0.0;
   double map_translation_z=0.0;
   is_init = false;
+  bool gps_diff_matching{false};
+  //0 is ndt_omp, 1 is vgicp_cuda
+  int place_recognition_method{0};
   std::string pcd_map_path = "/home/a/ace_ws/src/velodyne_ndt/map/";
   std::string pcd_map_name = "map.pcd";
 
@@ -210,17 +220,20 @@ int main(int argc, char** argv)
   nh.getParam("ndt_near_points", ndt_near_points);
   nh.getParam("ndt_max_iteration", ndt_max_iteration);
   nh.getParam("ndt_max_threads", ndt_max_threads);
-  
+  nh.getParam("gps_diff_matching", gps_diff_matching);
+  nh.getParam("place_recognition_method", place_recognition_method);
+
   ndt_matching.setMapTransformInfo(map_rotation_theta, map_translation_x, map_translation_y, map_translation_z);
   if(is_init == true){
     ROS_INFO("\n-----User init pose-----\n");
     ndt_matching.setInitPosition(odom_init_x, odom_init_y, odom_init_z, odom_init_rotation);
   }
-  ndt_matching.init(pcd_map_resolution, pcd_map_path, pcd_map_name, submap_select, search_radius, ndt_near_points, ndt_max_iteration, ndt_max_threads);
+  ndt_matching.init(pcd_map_resolution, pcd_map_path, pcd_map_name, submap_select, search_radius, ndt_near_points, ndt_max_iteration, ndt_max_threads, gps_diff_matching, place_recognition_method);
   ndt_matching.setGpsLidarTF(sensor_diff_x, sensor_diff_y, sensor_diff_z);
 
   ros::Subscriber filtered_lidar_sub = nh.subscribe<sensor_msgs::PointCloud2>("/filtered_point", 1, lidarHandler);
   ros::Subscriber pose_sub = nh.subscribe<geometry_msgs::PoseStamped>("/filtered_pose", 1, poseCallback);
+  ros::ServiceServer relocal_srv = nh.advertiseService("relocalize", reLocalizeCallback);
 
   map_pub = nh.advertise<sensor_msgs::PointCloud2>("/pcd_map", 1);
   ndt_pc_pub = nh.advertise<sensor_msgs::PointCloud2>("/ndt", 1);
