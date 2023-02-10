@@ -33,6 +33,7 @@ std::mutex mutex_control;
 NdtMatching::ndtMatching ndt_matching;
 
 bool is_init;
+bool only_position;
 int odom_frame = 0;
 
 void lidarHandler(const sensor_msgs::PointCloud2ConstPtr &filtered_msg)
@@ -77,8 +78,8 @@ void ndtMatching()
       nav_pose.linear() = local_orientation.toRotationMatrix();
       
       if(is_init == false){
-        Eigen::Vector3d eigen_rpy = nav_pose.rotation().eulerAngles(0, 1, 2);
-        ndt_matching.setInitPosition(nav_pose.translation().x(), nav_pose.translation().y(), nav_pose.translation().z(), eigen_rpy.z());
+        Eigen::Vector3d eigen_rpy{nav_pose.rotation().eulerAngles(0, 1, 2)};
+        ndt_matching.setInitPosition(nav_pose.translation().x(), nav_pose.translation().y(), nav_pose.translation().z(), eigen_rpy.z(), only_position);
         is_init = true;
         init_cnt++;
         filtered_pose_buf.pop();
@@ -94,7 +95,6 @@ void ndtMatching()
       
       //pose after ndt
       Eigen::Isometry3d ndt_result_pose = Eigen::Isometry3d::Identity();
-      //ndt_matching.processNdt(point_in, point_out, nav_pose, ndt_result_pose);
       ndt_matching.processPlaceRecognition(point_in, point_out, nav_pose, ndt_result_pose);
       Eigen::Vector3d ndt_position = ndt_result_pose.translation();
       Eigen::Quaterniond ndt_orientation(ndt_result_pose.rotation());
@@ -112,7 +112,7 @@ void ndtMatching()
       geometry_msgs::TransformStamped ndt_transform_stamped;
       ndt_transform_stamped.header.stamp = ros::Time::now();
       ndt_transform_stamped.header.frame_id = "map";
-      ndt_transform_stamped.child_frame_id = "base_link";
+      ndt_transform_stamped.child_frame_id = "ndt";
       ndt_transform_stamped.transform.translation.x = ndt_position.x();
       ndt_transform_stamped.transform.translation.y = ndt_position.y();
       ndt_transform_stamped.transform.translation.z = ndt_position.z();
@@ -141,7 +141,7 @@ void ndtMatching()
       nav_msgs::Odometry ndt_pose_msg;
       ndt_pose_msg.header.stamp = point_in_time;
       ndt_pose_msg.header.frame_id = "map";
-      ndt_pose_msg.child_frame_id = "base_link";
+      ndt_pose_msg.child_frame_id = "ndt";
       ndt_pose_msg.pose.pose.position.x = ndt_position.x();
       ndt_pose_msg.pose.pose.position.y = ndt_position.y();
       ndt_pose_msg.pose.pose.position.z = ndt_position.z();
@@ -207,6 +207,7 @@ int main(int argc, char** argv)
   nh.getParam("map_translation_z", map_translation_z);
   nh.getParam("map_rotation_theta", map_rotation_theta);
   nh.getParam("user_init_pose", is_init);
+  nh.getParam("only_position", only_position);
   nh.getParam("odom_init_x", odom_init_x);
   nh.getParam("odom_init_y", odom_init_y);
   nh.getParam("odom_init_z", odom_init_z);
@@ -225,7 +226,7 @@ int main(int argc, char** argv)
   ndt_matching.setMapTransformInfo(map_rotation_theta, map_translation_x, map_translation_y, map_translation_z);
   if(is_init == true){
     ROS_INFO("\n-----User init pose-----\n");
-    ndt_matching.setInitPosition(odom_init_x, odom_init_y, odom_init_z, odom_init_rotation);
+    ndt_matching.setInitPosition(odom_init_x, odom_init_y, odom_init_z, odom_init_rotation, only_position);
   }
   ndt_matching.init(pcd_map_resolution, pcd_map_path, pcd_map_name, submap_select, search_radius, ndt_near_points, ndt_max_iteration, ndt_max_threads, gps_diff_matching, place_recognition_method);
   ndt_matching.setGpsLidarTF(sensor_diff_x, sensor_diff_y, sensor_diff_z);

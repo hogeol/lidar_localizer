@@ -44,7 +44,7 @@ namespace NdtMatching{
     
   public:
     void setMapTransformInfo(const double &theta, const double &x, const double &y, const double &z);
-    void setInitPosition(const double &x, const double &y, const double &z, const double &theta);
+    void setInitPosition(const double &x, const double &y, const double &z, const double &theta, const bool &only_position = true);
     void setGpsLidarTF(const double &diff_x, const double &diff_y, const double &diff_z);
     void init(const double &map_resolution, const std::string &map_path, const std::string &map_name, const bool &submap_select,const double &search_radius, const int &near_points, const int &max_iter, const int &ndt_threads, const bool &gps_diff_matching, const int &place_recognition_method);
     void processPlaceRecognition(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Isometry3d &pose_in, Eigen::Isometry3d &pose_out);

@@ -37,7 +37,7 @@
   <!-- <arg name="map_translation_x" default="-362081.17894503544" />
   <arg name="map_translation_y" default="-4054338.180751084" />
   <arg name="map_translation_z" default="0.0" /> -->
-  <arg name="map_translation_x" default="15.0" />
+  <arg name="map_translation_x" default="0.0" />
   <arg name="map_translation_y" default="-2.0" />
   <arg name="map_translation_z" default="55.88467317447066" />
   <arg name="map_rotation_theta" default="0.0" />
@@ -45,10 +45,11 @@
   <arg name="place_recognition_method" default="0" />
   <arg name="gps_diff_matching" default="true" />
   <arg name="user_init_pose" default="false" />
+  <arg name="only_position" default="false" />
   <arg name="odom_init_x" default="0.0" />
   <arg name="odom_init_y" default="0.0" />
   <arg name="odom_init_z" default="0.0" />
-  <arg name="odom_init_rotation" default="0.0" />
+  <arg name="odom_init_rotation" default="3.14" />
   <arg name="sensor_diff_x" default="0.0" />
   <arg name="sensor_diff_y" default="0.0" />
   <arg name="sensor_diff_z" default="0.0" />
@@ -65,7 +66,7 @@
   <arg name="utm_window_size" default="2" />
   
   <!-- ekf arguments -->
-  <arg name="weight_orientation_window_size" default="1" />
+  <arg name="weight_orientation_window_size" default="2" />
   <arg name="weight_position_window_size" default="4" />
 
   <!-- rviz -->
@@ -109,6 +110,7 @@
   <param name="place_recognition_method" type="int" value="$(arg place_recognition_method)" />
   <param name="gps_diff_matching" type="bool" value="$(arg gps_diff_matching)" />
   <param name="user_init_pose" type="bool" value="$(arg user_init_pose)" />
+  <param name="only_position" type="bool" value="$(arg only_position)" />
   <param name="odom_init_x" type="double" value="$(arg odom_init_x)" />
   <param name="odom_init_y" type="double" value="$(arg odom_init_y)" />
   <param name="odom_init_z" type="double" value="$(arg odom_init_z)" />
@@ -156,14 +158,14 @@
   <!-- ndt trajectory for rviz-->
   <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="trajectory_server_gps" ns="ndt" >
     <param name="/target_frame_name" value="map" />
-    <param name="/source_frame_name" value="base_link" />
+    <param name="/source_frame_name" value="ndt" />
     <param name="/trajectory_update_rate" value="10.0" />
     <param name="/trajectory_publish_rate" value="10.0" />
   </node>
 
-  <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="trajectory_server_ndt" ns="final" >
+  <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="trajectory_server_ndt" ns="base_link" >
     <param name="/target_frame_name" value="map" />
-    <param name="/source_frame_name" value="final" />
+    <param name="/source_frame_name" value="base_link" />
     <param name="/trajectory_update_rate" value="10.0" />
     <param name="/trajectory_publish_rate" value="10.0" />
   </node>

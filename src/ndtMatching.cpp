@@ -10,9 +10,15 @@ namespace NdtMatching{
     m_transform_z = z;
   }
 
-  void ndtMatching::setInitPosition(const double &x, const double &y, const double &z, const double &theta)
+  void ndtMatching::setInitPosition(const double &x, const double &y, const double &z, const double &theta, const bool &only_position)
   {
-    Eigen::AngleAxisf init_rotation(theta, Eigen::Vector3f::UnitZ());
+    Eigen::AngleAxisf init_rotation{Eigen::AngleAxisf::Identity()};
+    if(only_position == false){
+      init_rotation = Eigen::AngleAxisf{theta, Eigen::Vector3f::UnitZ()};
+    }
+    else{
+      init_rotation = Eigen::AngleAxisf{0.0, Eigen::Vector3f::UnitZ()};
+    }
     Eigen::Translation3f init_translation(x, y, z);
     m_last_pose = (init_translation * init_rotation).matrix();
     printf("\nx: %.5f\ny: %.5f\nz: %.5f\nposition inited\n", x, y, z);
@@ -56,7 +62,7 @@ namespace NdtMatching{
       m_ndt = pclomp::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>::Ptr(new pclomp::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>());
       m_ndt->setTransformationEpsilon(0.001);
       m_ndt->setStepSize(0.1);
-      m_ndt->setResolution(3.0);
+      m_ndt->setResolution(4.0);
       m_ndt->setNumThreads(ndt_threads);
       m_ndt->setMaximumIterations(max_iter);
       m_ndt->setInputTarget(mp_pcd_map);
@@ -71,6 +77,7 @@ namespace NdtMatching{
   void ndtMatching::processPlaceRecognition(const pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_in, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out, const Eigen::Isometry3d &pose_in, Eigen::Isometry3d &pose_out)
   {
     clock_t start, end;
+    static int time_cnt = 0;
     //NDT
     start = clock();
     double matching_score = 0.0;
@@ -101,24 +108,25 @@ namespace NdtMatching{
     Eigen::Vector3f measured_pose(m_last_pose(0,3), m_last_pose(1,3), m_last_pose(2,3));
     Eigen::Vector3d gps_in_pose(pose_in.translation().x(), pose_in.translation().y(), pose_in.translation().z());
     
-    if(m_gps_diff_matching && calDistance(gps_in_pose.cast<float>(), measured_pose) > 0.4 && matching_score > 0.9){
+    if(m_gps_diff_matching && calDistance(gps_in_pose.cast<float>(), measured_pose) > 0.4 && matching_score > 1.5){
         if(m_local_count % 20 == 0){
           m_last_pose(0,3) = gps_in_pose.x();
           m_last_pose(1,3) = gps_in_pose.y();
           m_last_pose(2,3) = gps_in_pose.z();
-          m_last_pose.block<3,3>(0,0) = pose_in.linear().cast<float>();
+          //m_last_pose.block<3,3>(0,0) = pose_in.linear().cast<float>();
           m_local_count = 0;
         }
         m_local_count++;
         //printf("\nlocal_count: %d\n", m_local_count);
     }
     
-    sensorTFCorrection(pose_out);
+    
     pcl::transformPointCloud(*pc_in, *pc_out, m_last_pose);
     pose_out.translation().x() = m_last_pose(0,3);
     pose_out.translation().y() = m_last_pose(1,3);
     pose_out.translation().z() = m_last_pose(2,3);
     pose_out.linear() = m_last_pose.block<3,3>(0,0).cast<double>();
+    sensorTFCorrection(pose_out);
     end = clock();
 
     // for(int i=0; i<4; i++){
@@ -131,13 +139,14 @@ namespace NdtMatching{
     //printf("\nndt_time: %f", result_time);
   }
 
+  //sensor position related with car center position
   inline void ndtMatching::sensorTFCorrection(Eigen::Isometry3d &pose_out)
   {
-    Eigen::Vector4f tf_bias{m_diff_x, m_diff_y, m_diff_z, 1.0};
-    pose_out.translation().x() += tf_bias.x();
-    pose_out.translation().y() += tf_bias.y();
-    pose_out.translation().z() += tf_bias.z();
+    Eigen::Vector4d lidar_position{m_diff_x, m_diff_y, m_diff_z, 1.0};
+    lidar_position = pose_out.matrix() * lidar_position;
+    pose_out.translation() = lidar_position.block<3,1>(0,0);
   }
+
   void ndtMatching::radiusSearch(const Eigen::Vector3d &based_point, pcl::PointCloud<pcl::PointXYZI>::Ptr &pc_out)
   {
     std::vector<int> indices;

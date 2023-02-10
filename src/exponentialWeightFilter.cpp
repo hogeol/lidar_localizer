@@ -25,9 +25,11 @@ namespace ExponentialWeightFilter{
   {
     m_last_pose.translation() = m_position_exponential_weight * m_last_pose.translation() + (1 - m_position_exponential_weight) * pres_pose.translation();
     m_last_pose.linear() = m_orientation_exponential_weight * m_last_pose.linear() + (1 - m_orientation_exponential_weight) * pres_pose.linear();
-    double x_diff{pres_pose.translation().x() - m_last_pose.translation().x()};
-    Eigen::Vector4d diff_correct{x_diff, 0.0, 0.0, 1.0};
-    m_last_pose.translation().x() += diff_correct.x();
+    Eigen::Vector4d b_point{Eigen::Vector4d::Identity()};
+    b_point.x() = pres_pose.translation().x() - m_last_pose.translation().x();
+    b_point.w() = 1.0;
+    b_point = m_last_pose.matrix() * b_point;
+    m_last_pose.translation() = b_point.block<3,1>(0,0);
   }
 
   exponentialWeightFilter::exponentialWeightFilter(void)
