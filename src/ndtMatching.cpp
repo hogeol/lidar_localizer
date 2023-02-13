@@ -113,7 +113,7 @@ namespace NdtMatching{
           m_last_pose(0,3) = gps_in_pose.x();
           m_last_pose(1,3) = gps_in_pose.y();
           m_last_pose(2,3) = gps_in_pose.z();
-          //m_last_pose.block<3,3>(0,0) = pose_in.linear().cast<float>();
+          m_last_pose.block<3,3>(0,0) = pose_in.linear().cast<float>();
           m_local_count = 0;
         }
         m_local_count++;

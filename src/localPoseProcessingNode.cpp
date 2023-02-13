@@ -63,10 +63,10 @@ void localProcessing()
       Eigen::Matrix4d imu_heading{Eigen::Matrix4d::Identity()};
       imu_heading.block<3,3>(0,0) = pres_orientation.toRotationMatrix();
       Eigen::Matrix4d imu_filtering{Eigen::Matrix4d::Identity()};
-      // imu_filtering << std::cos(1.5708), -std::sin(1.5708), 0.0, 0.0,
-      //                     std::sin(1.5708),  std::cos(1.5708), 0.0, 0.0,
-      //                     0.0              ,  0.0              , 1.0, 0.0,
-      //                     0.0              ,  0.0              , 0.0, 1.0;
+      imu_filtering << std::cos(-1.5708), -std::sin(-1.5708), 0.0, 0.0,
+                          std::sin(-1.5708),  std::cos(-1.5708), 0.0, 0.0,
+                          0.0              ,  0.0              , 1.0, 0.0,
+                          0.0              ,  0.0              , 0.0, 1.0;
       imu_heading = imu_filtering * imu_heading;                           
       pres_orientation = imu_heading.block<3,3>(0,0);
 
@@ -105,8 +105,8 @@ void localProcessing()
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "localProcessing");
-  ros::NodeHandle nh;
+  ros::init(argc, argv, "localPoseProcessing");
+  ros::NodeHandle nh("local_pose_processing_node");
 
   std::string imu_topic = "/vectornav/IMU";
   int imu_window_size = 4;
@@ -115,6 +115,8 @@ int main(int argc, char** argv)
   nh.getParam("imu_topic", imu_topic);
   nh.getParam("imu_window_size", imu_window_size);
   nh.getParam("utm_window_size", utm_window_size);
+
+  std::cout << "\nwindow size: " << imu_window_size << "utm window size: " << utm_window_size << std::endl;
 
   ros::Subscriber imu_sub = nh.subscribe<sensor_msgs::Imu>(imu_topic, 1, imuHandler);
   ros::Subscriber utm_sub = nh.subscribe<geometry_msgs::PoseStamped>("/utm", 1, utmCallback);

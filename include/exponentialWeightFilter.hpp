@@ -1,6 +1,9 @@
 #ifndef _EXPONENTIAL_WEIGHT_FILTER_
 #define _EXPONENTIAL_WEIGHT_FILTER_
 
+#include <iostream>
+#include <cmath>
+
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>

@@ -1,3 +1,4 @@
+#define _USE_MATH_DEFINES_
 #include "exponentialWeightFilter.hpp"
 
 namespace ExponentialWeightFilter{
@@ -25,11 +26,8 @@ namespace ExponentialWeightFilter{
   {
     m_last_pose.translation() = m_position_exponential_weight * m_last_pose.translation() + (1 - m_position_exponential_weight) * pres_pose.translation();
     m_last_pose.linear() = m_orientation_exponential_weight * m_last_pose.linear() + (1 - m_orientation_exponential_weight) * pres_pose.linear();
-    Eigen::Vector4d b_point{Eigen::Vector4d::Identity()};
-    b_point.x() = pres_pose.translation().x() - m_last_pose.translation().x();
-    b_point.w() = 1.0;
-    b_point = m_last_pose.matrix() * b_point;
-    m_last_pose.translation() = b_point.block<3,1>(0,0);
+    Eigen::Vector4d b_point{Eigen::Vector4d{pres_pose.translation().x() - m_last_pose.translation().x(), 0.0, 0.0, 1.0}};
+    m_last_pose.matrix().col(3) = m_last_pose.matrix() * b_point;
   }
 
   exponentialWeightFilter::exponentialWeightFilter(void)

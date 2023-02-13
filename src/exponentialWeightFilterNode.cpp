@@ -57,6 +57,7 @@ void expWeightProcess()
       exponential_weight_filter.processExpFilter(pose_in_ndt, final_pose);
 
       Eigen::Quaterniond final_orientation(final_pose.rotation());
+      Eigen::Vector3d final_position{final_pose.translation()};
       final_orientation.normalize();
 
       //after exponential weight tf
@@ -66,9 +67,9 @@ void expWeightProcess()
       final_transform_stamped.header.stamp = ros::Time::now();
       final_transform_stamped.header.frame_id = "map";
       final_transform_stamped.child_frame_id = "base_link";
-      final_transform_stamped.transform.translation.x = final_pose.translation().x();
-      final_transform_stamped.transform.translation.y = final_pose.translation().y();
-      final_transform_stamped.transform.translation.z = final_pose.translation().z();
+      final_transform_stamped.transform.translation.x = final_position.x();
+      final_transform_stamped.transform.translation.y = final_position.y();
+      final_transform_stamped.transform.translation.z = final_position.z();
       final_transform_stamped.transform.rotation.w = final_orientation.w();
       final_transform_stamped.transform.rotation.x = final_orientation.x();
       final_transform_stamped.transform.rotation.y = final_orientation.y();
@@ -81,9 +82,9 @@ void expWeightProcess()
       final_pose_msg.header.stamp = time_in_ndt;
       final_pose_msg.header.frame_id = "map";
       final_pose_msg.child_frame_id = "base_link";
-      final_pose_msg.pose.pose.position.x = final_pose.translation().x();
-      final_pose_msg.pose.pose.position.y = final_pose.translation().y();
-      final_pose_msg.pose.pose.position.z = final_pose.translation().z();
+      final_pose_msg.pose.pose.position.x = final_position.x();
+      final_pose_msg.pose.pose.position.y = final_position.y();
+      final_pose_msg.pose.pose.position.z = final_position.z();
       final_pose_msg.pose.pose.orientation.w = final_orientation.w();
       final_pose_msg.pose.pose.orientation.x = final_orientation.x();
       final_pose_msg.pose.pose.orientation.y = final_orientation.y();
