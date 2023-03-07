@@ -24,6 +24,10 @@ more thread is not always good results
 
 In my case, CPU i7-12700KF have 20-threads
 
-but, Compare between thread 10 and 5, 5 is better in my environment
+but, Compare between thread 12 and above, it seems it doesn't have any difference in performance
+
+I think it is almost same above 12-thread
+
+In my case in ch.64 velodyne with car velocity is about 100km/h, performed well
 
 Please find your best threads through experience
