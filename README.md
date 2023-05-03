@@ -32,3 +32,6 @@ open another terminal, and enter below command
 ```
 $ ros2 run nav2_util lifecycle_bringup map_server
 ```
+
+Now rviz2 cannot visualization with this code.
+Need to update Sensor QoS in node to visualization with rviz2
