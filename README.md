@@ -30,7 +30,7 @@ Ohter third party packages are included in this repository.
 
 ### Configuration launch file
 
-> ndt_based_localizer.launch
+> roslaunch lidar_localizer ndt_based_localizer.launch
 
 In arguments **ndt_max_thread**.
 
