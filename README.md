@@ -1,5 +1,9 @@
 # lidar_localizer
 
+## How to install third party
+
+### geographic library
+
 follow below link to download geographic library
 
 https://github.com/geographiclib/geographiclib
@@ -18,6 +22,10 @@ make -j$(nproc-4)
 sudo make install
 ```
 
+## Result
+
+### Configuration launch file
+
 > In arguments ndt_max_thread
 
 more thread is not always good results
@@ -31,3 +39,5 @@ I think it is almost same above 12-thread
 In my case in ch.64 velodyne with car velocity is about 100km/h, performed well
 
 Please find your best threads through experience
+
+
