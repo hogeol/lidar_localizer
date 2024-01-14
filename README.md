@@ -32,17 +32,17 @@ Ohter third party packages are included in this repository.
 
 > In arguments ndt_max_thread
 
-more thread is not always good results
+Many thread is not always good results.
 
-In my case, CPU i7-12700KF have 20-threads
+In my case, CPU i7-12700KF have 20-threads.
 
-but, Compare between thread 12 and above, it seems it doesn't have any difference in performance
+but, Compare between thread 12 and above, it seems it doesn't have any difference in performance.
 
-I think it is almost same above 12-thread
+I think it is almost same above 12-thread.
 
-In my case in ch.64 velodyne with car velocity is about 100km/h, performed well
+In my case in ch.64 velodyne with car velocity is about 100km/h, performed well.
 
-Please find your best threads through experience
+Please find your best threads through experience. ***Recommend at least 4 thread are left***
 
 ### Result with Ch. 32 velodyne LiDAR
 
