@@ -42,7 +42,9 @@ I think it is almost same above 12-thread.
 
 In my case in ch.64 velodyne with car velocity is about 100km/h, performed well.
 
-Please find your best threads through experience. ***Recommend at least 4 thread are left for other process***
+Please find your best threads through experience.
+
+***Recommend at least 4 thread are left for other process***
 
 ### Result with Ch. 32 velodyne LiDAR
 
