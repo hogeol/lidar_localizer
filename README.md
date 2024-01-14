@@ -22,6 +22,10 @@ make -j$(nproc-4)
 sudo make install
 ```
 
+### Others
+
+Ohter third party packages are included in this repository.
+
 ## Result
 
 ### Configuration launch file
@@ -39,5 +43,7 @@ I think it is almost same above 12-thread
 In my case in ch.64 velodyne with car velocity is about 100km/h, performed well
 
 Please find your best threads through experience
+
+### Result with Ch. 32 velodyne LiDAR
 
 
