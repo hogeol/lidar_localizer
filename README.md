@@ -46,7 +46,7 @@ In my case in ch.64 velodyne with car velocity is about 100km/h, performed well.
 
 Please find your best threads through experience.
 
-***Recommend at least 4 thread are left for other process***
+***Recommend that at least 4 thread are left for other process***
 
 ### GNSS to UTM conversion
 
