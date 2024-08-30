@@ -42,7 +42,7 @@ but, Compare between thread 12 and above, it seems it doesn't have any differenc
 
 I think it is almost same above 12-thread.
 
-In my case in ch.64 velodyne with car velocity is about 100km/h, performed well.
+In my case in ch.32 velodyne with car velocity is about 120km/h, performed well.
 
 Please find your best threads through experience.
 
